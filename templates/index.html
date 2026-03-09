@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SpamGuard AI — Email Security Platform</title>
+    <meta name="description"
+        content="AI-powered email security platform with phishing detection, URL scanning, and explainable AI spam classification." />
+
+    <!-- Icons (Lucide) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+    <!-- html2pdf.js for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/style.css" />
+</head>
+
+<body>
+    <div class="app-layout">
+
+        <!-- Sidebar Overlay (mobile) -->
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-icon"><i data-lucide="shield-check"></i></div>
+                <div class="brand-text">
+                    <span class="brand-name">SpamGuard AI</span>
+                    <span class="brand-tagline">Email Security Platform</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-section-label">Analysis</div>
+                <a class="nav-item active" data-panel="analyze" onclick="switchPanel('analyze')">
+                    <span class="nav-icon"><i data-lucide="scan-search"></i></span>
+                    <span>Analyze Email</span>
+                </a>
+                <a class="nav-item" data-panel="batch" onclick="switchPanel('batch')">
+                    <span class="nav-icon"><i data-lucide="layers"></i></span>
+                    <span>Batch Processing</span>
+                </a>
+
+                <div class="nav-section-label">Intelligence</div>
+                <a class="nav-item" data-panel="analytics" onclick="switchPanel('analytics')">
+                    <span class="nav-icon"><i data-lucide="bar-chart-3"></i></span>
+                    <span>Analytics</span>
+                </a>
+                <a class="nav-item" data-panel="history" onclick="switchPanel('history')">
+                    <span class="nav-icon"><i data-lucide="clock"></i></span>
+                    <span>History</span>
+                    <span class="nav-badge" id="historyCount">0</span>
+                </a>
+
+                <div class="nav-section-label">Developer</div>
+                <a class="nav-item" data-panel="api" onclick="switchPanel('api')">
+                    <span class="nav-icon"><i data-lucide="code-2"></i></span>
+                    <span>API Docs</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <a class="nav-item" onclick="toggleTheme()">
+                    <span class="nav-icon" id="themeIcon"><i data-lucide="moon"></i></span>
+                    <span id="themeLabel">Dark Mode</span>
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+
+            <!-- Top Bar -->
+            <header class="top-bar">
+                <div class="top-bar-left">
+                    <button class="mobile-menu-btn" onclick="toggleSidebar()"><i data-lucide="menu"></i></button>
+                    <h1 class="top-bar-title" id="pageTitle">Email Analysis</h1>
+                </div>
+                <div class="top-bar-right">
+                    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+                        <span class="theme-toggle-icon" id="themeToggleIcon"></span>
+                    </button>
+                </div>
+            </header>
+
+            <div class="page-content">
+
+                <!-- ── Stats Row ─────────────────────────────── -->
+                <div class="stats-grid" id="statsGrid">
+                    <div class="stat-card accent-cyan">
+                        <div class="stat-label">Accuracy</div>
+                        <div class="stat-value" id="statAccuracy">—</div>
+                        <div class="stat-icon"><i data-lucide="crosshair"></i></div>
+                    </div>
+                    <div class="stat-card accent-purple">
+                        <div class="stat-label">Precision</div>
+                        <div class="stat-value" id="statPrecision">—</div>
+                        <div class="stat-icon"><i data-lucide="locate"></i></div>
+                    </div>
+                    <div class="stat-card accent-blue">
+                        <div class="stat-label">Recall</div>
+                        <div class="stat-value" id="statRecall">—</div>
+                        <div class="stat-icon"><i data-lucide="refresh-cw"></i></div>
+                    </div>
+                    <div class="stat-card accent-pink">
+                        <div class="stat-label">F1 Score</div>
+                        <div class="stat-value" id="statF1">—</div>
+                        <div class="stat-icon"><i data-lucide="scale"></i></div>
+                    </div>
+                    <div class="stat-card accent-orange">
+                        <div class="stat-label">Analyses</div>
+                        <div class="stat-value" id="statPredictions">0</div>
+                        <div class="stat-icon"><i data-lucide="trending-up"></i></div>
+                    </div>
+                </div>
+
+                <!-- ══════════════════════════════════════════════
+                     PANEL: Analyze Email
+                     ══════════════════════════════════════════════ -->
+                <div class="panel active" id="panel-analyze">
+
+                    <!-- Model Selector -->
+                    <div class="model-selector" id="modelSelector">
+                        <div class="model-chip active" data-model="nb" onclick="selectModel('nb')">
+                            <span class="chip-dot"></span> Naive Bayes
+                        </div>
+                        <div class="model-chip" data-model="lr" onclick="selectModel('lr')">
+                            <span class="chip-dot"></span> Logistic Regression
+                        </div>
+                        <div class="model-chip" data-model="rf" onclick="selectModel('rf')">
+                            <span class="chip-dot"></span> Random Forest
+                        </div>
+                    </div>
+
+                    <div class="analyze-grid">
+                        <!-- Left: Input -->
+                        <div>
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3><i data-lucide="mail" class="header-icon"></i> Email Content</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="email-input-area">
+                                        <textarea id="emailInput"
+                                            placeholder="Paste email content here to analyze for spam, phishing, and security threats..."></textarea>
+                                    </div>
+                                    <div class="input-toolbar">
+                                        <div class="input-toolbar-left">
+                                            <div class="file-input-wrapper">
+                                                <input type="file" id="emailFile" accept=".txt,.eml,.md" />
+                                                <label for="emailFile" class="file-input-label"><i
+                                                        data-lucide="paperclip" class="inline-icon"></i> Upload
+                                                    File</label>
+                                            </div>
+                                            <span class="char-count" id="charCount">0 chars</span>
+                                        </div>
+                                        <div class="sample-btns">
+                                            <button class="sample-btn" onclick="loadSample('spam')"><i
+                                                    data-lucide="alert-triangle" class="inline-icon"></i> Spam
+                                                Sample</button>
+                                            <button class="sample-btn" onclick="loadSample('ham')"><i
+                                                    data-lucide="check-circle" class="inline-icon"></i> Legit
+                                                Sample</button>
+                                            <button class="sample-btn" onclick="loadSample('phishing')"><i
+                                                    data-lucide="fish" class="inline-icon"></i> Phishing Sample</button>
+                                        </div>
+                                    </div>
+                                    <div style="display: flex; gap: 10px; margin-top: 16px;">
+                                        <button class="btn btn-primary btn-lg" id="classifyBtn"
+                                            onclick="classifyEmail()" style="flex:1;">
+                                            <i data-lucide="search" class="inline-icon"></i> Analyze Email
+                                        </button>
+                                        <button class="btn btn-secondary btn-icon" onclick="clearInput()"
+                                            title="Clear"><i data-lucide="trash-2"></i></button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- XAI Panel (shown after analysis) -->
+                            <div class="card" id="xaiCard" style="display:none; margin-top: 20px;">
+                                <div class="card-header">
+                                    <h3><i data-lucide="brain" class="header-icon"></i> Explainable AI — Why this
+                                        classification?
+                                    </h3>
+                                </div>
+                                <div class="card-body">
+                                    <p style="font-size:13px; color:var(--text-muted); margin-bottom: 14px;">
+                                        Top keywords contributing to the spam classification:
+                                    </p>
+                                    <div id="xaiKeywords" class="xai-keywords"></div>
+                                    <div id="xaiContributions" style="margin-top: 16px;"></div>
+                                </div>
+                            </div>
+
+                            <!-- Highlighted Email (shown after analysis) -->
+                            <div class="card" id="highlightCard" style="display:none; margin-top: 20px;">
+                                <div class="card-header">
+                                    <h3><i data-lucide="file-text" class="header-icon"></i> Highlighted Suspicious
+                                        Content</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div id="highlightedEmail" class="highlighted-email"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right: Results -->
+                        <div class="result-panel">
+                            <!-- Verdict -->
+                            <div class="card">
+                                <div class="card-body" id="resultArea">
+                                    <div class="result-placeholder" id="resultPlaceholder">
+                                        <div class="placeholder-icon"><i data-lucide="shield"></i></div>
+                                        <p style="font-weight:600;">Waiting for email to analyze</p>
+                                        <p style="font-size:12px; margin-top:4px;">Paste text or upload a file</p>
+                                    </div>
+                                    <div id="resultBox" style="display:none;"></div>
+                                </div>
+                            </div>
+
+                            <!-- Phishing Risk -->
+                            <div class="card" id="phishingCard" style="display:none;">
+                                <div class="card-header">
+                                    <h3><i data-lucide="fish" class="header-icon"></i> Phishing Risk</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div id="phishingResult"></div>
+                                </div>
+                            </div>
+
+                            <!-- URL Scanner -->
+                            <div class="card" id="urlCard" style="display:none;">
+                                <div class="card-header">
+                                    <h3><i data-lucide="link" class="header-icon"></i> URL Security Scan</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div id="urlResult"></div>
+                                </div>
+                            </div>
+
+                            <!-- Email Intelligence -->
+                            <div class="card" id="intelCard" style="display:none;">
+                                <div class="card-header">
+                                    <h3><i data-lucide="cpu" class="header-icon"></i> Email Intelligence</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div id="intelResult"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ══════════════════════════════════════════════
+                     PANEL: Batch Processing
+                     ══════════════════════════════════════════════ -->
+                <div class="panel" id="panel-batch">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i data-lucide="layers" class="header-icon"></i> Batch Email Classification</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="batch-upload-zone" id="batchUploadZone"
+                                onclick="document.getElementById('batchFile').click()">
+                                <div class="upload-icon"><i data-lucide="upload-cloud"></i></div>
+                                <div class="upload-text">Click or drag CSV file here</div>
+                                <div class="upload-sub">CSV should have a column named: text, email, content, or body
+                                </div>
+                                <input type="file" id="batchFile" accept=".csv" style="display:none" />
+                            </div>
+
+                            <p style="text-align:center; font-size:13px; color:var(--text-muted); margin: 12px 0;">or
+                                paste multiple emails below (separated by blank lines)</p>
+
+                            <textarea id="batchInput" class="email-input-area"
+                                style="width:100%; min-height:140px; background:var(--bg-input); border:1px solid var(--border-color); border-radius:var(--radius-md); color:var(--text-primary); padding:14px; font-family:Inter,sans-serif; font-size:14px; resize:vertical;"
+                                placeholder="Email 1 text...&#10;&#10;Email 2 text..."></textarea>
+
+                            <div style="margin-top: 16px; display:flex; gap:10px;">
+                                <button class="btn btn-primary btn-lg" id="batchBtn" onclick="batchClassify()"
+                                    style="flex:1;">
+                                    <i data-lucide="zap" class="inline-icon"></i> Classify Batch
+                                </button>
+                            </div>
+
+                            <div id="batchResults" style="margin-top: 24px;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ══════════════════════════════════════════════
+                     PANEL: Analytics
+                     ══════════════════════════════════════════════ -->
+                <div class="panel" id="panel-analytics">
+                    <div class="chart-grid" id="chartGrid">
+                        <div class="chart-card">
+                            <h4><i data-lucide="pie-chart" class="header-icon"></i> Spam vs Ham Distribution</h4>
+                            <div class="chart-container">
+                                <canvas id="chartSpamHam"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <h4><i data-lucide="alert-circle" class="header-icon"></i> Risk Level Distribution</h4>
+                            <div class="chart-container">
+                                <canvas id="chartRisk"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <h4><i data-lucide="award" class="header-icon"></i> Model Performance Comparison</h4>
+                            <div class="chart-container">
+                                <canvas id="chartModels"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <h4><i data-lucide="activity" class="header-icon"></i> Confidence Trend (Recent)</h4>
+                            <div class="chart-container">
+                                <canvas id="chartTrend"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ══════════════════════════════════════════════
+                     PANEL: History
+                     ══════════════════════════════════════════════ -->
+                <div class="panel" id="panel-history">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i data-lucide="clock" class="header-icon"></i> Analysis History</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="history-toolbar">
+                                <input type="text" class="history-search" id="historySearch"
+                                    placeholder="Search emails..." oninput="loadHistory()" />
+                                <button class="filter-chip active" data-filter="all"
+                                    onclick="setFilter('all')">All</button>
+                                <button class="filter-chip" data-filter="spam" onclick="setFilter('spam')"><i
+                                        data-lucide="alert-triangle" class="inline-icon"></i> Spam</button>
+                                <button class="filter-chip" data-filter="ham" onclick="setFilter('ham')"><i
+                                        data-lucide="check-circle" class="inline-icon"></i> Ham</button>
+                            </div>
+                            <div class="history-list" id="historyList">
+                                <div class="empty-state">
+                                    <div class="empty-icon"><i data-lucide="inbox"></i></div>
+                                    <div class="empty-text">No analysis history yet</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ══════════════════════════════════════════════
+                     PANEL: API Docs
+                     ══════════════════════════════════════════════ -->
+                <div class="panel" id="panel-api">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i data-lucide="code-2" class="header-icon"></i> REST API Documentation</h3>
+                        </div>
+                        <div class="card-body">
+                            <p style="color:var(--text-muted); font-size:14px; margin-bottom:24px;">
+                                Integrate SpamGuard AI into your applications using these endpoints.
+                                Base URL: <code style="color:var(--accent-cyan);">http://localhost:5000</code>
+                            </p>
+
+                            <div class="api-endpoint">
+                                <span class="api-method post">POST</span>
+                                <span class="api-path">/api/predict</span>
+                                <p class="api-desc">Classify a single email with full analysis (spam detection,
+                                    phishing, URL scan, intelligence).</p>
+                                <div class="code-block">
+                                    <pre>{
+  "email_text": "Your email content here...",
+  "model": "nb"  // Options: "nb", "lr", "rf"
+}</pre>
+                                </div>
+                            </div>
+
+                            <div class="api-endpoint">
+                                <span class="api-method post">POST</span>
+                                <span class="api-path">/api/batch_predict</span>
+                                <p class="api-desc">Classify multiple emails at once. Send JSON array or upload CSV.</p>
+                                <div class="code-block">
+                                    <pre>{
+  "emails": ["email1 text...", "email2 text..."],
+  "model": "nb"
+}</pre>
+                                </div>
+                            </div>
+
+                            <div class="api-endpoint">
+                                <span class="api-method get">GET</span>
+                                <span class="api-path">/api/history</span>
+                                <p class="api-desc">Retrieve analysis history. Supports query params: filter
+                                    (spam/ham/all), search, limit.</p>
+                                <div class="code-block">
+                                    <pre>GET /api/history?filter=spam&search=prize&limit=50</pre>
+                                </div>
+                            </div>
+
+                            <div class="api-endpoint">
+                                <span class="api-method get">GET</span>
+                                <span class="api-path">/api/stats</span>
+                                <p class="api-desc">Get model statistics, metrics, and available models.</p>
+                            </div>
+
+                            <div class="api-endpoint">
+                                <span class="api-method get">GET</span>
+                                <span class="api-path">/api/analytics</span>
+                                <p class="api-desc">Get analytics data for dashboard charts (distribution, trends, model
+                                    comparison).</p>
+                            </div>
+
+                            <div class="api-endpoint">
+                                <span class="api-method get">GET</span>
+                                <span class="api-path">/api/models</span>
+                                <p class="api-desc">List available ML models with their performance metrics.</p>
+                            </div>
+
+                            <div class="api-endpoint">
+                                <span class="api-method delete">DELETE</span>
+                                <span class="api-path">/api/history/{id}</span>
+                                <p class="api-desc">Delete a specific history entry by ID.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div> <!-- /page-content -->
+        </main>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Main Script -->
+    <script src="/static/script.js"></script>
+</body>
+
+</html>
