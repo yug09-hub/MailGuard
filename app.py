@@ -1845,8 +1845,14 @@ def oauth_callback():
 
 
 # ── PDF Report Generation ───────────────────────────────────────────────────
-from fpdf import FPDF
-import io
+# Import fpdf2 optionally - may not be available on all platforms
+try:
+    from fpdf import FPDF
+    import io
+    FPDF_AVAILABLE = True
+except ImportError:
+    FPDF_AVAILABLE = False
+    FPDF = None
 
 def sanitize_for_pdf(text):
     """Sanitize text for PDF output - replace Unicode chars with ASCII equivalents."""
@@ -1984,6 +1990,8 @@ class PDFReport(FPDF):
 @login_required
 def generate_pdf():
     """Generate a professional PDF report server-side."""
+    if not FPDF_AVAILABLE:
+        return jsonify({"error": "PDF generation not available in this environment"}), 503
     try:
         data = request.get_json()
         if not data:
