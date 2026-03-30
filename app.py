@@ -15,11 +15,18 @@ import joblib
 import nltk
 from functools import wraps
 import numpy as np
-import pandas as pd
 from datetime import datetime
 from urllib.parse import urlparse
 from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
+
+# Optional imports - may not be available on all platforms (e.g., Vercel)
+try:
+    import pandas as pd
+    PANDAS_AVAILABLE = True
+except ImportError:
+    PANDAS_AVAILABLE = False
+    pd = None
 
 # Performance Optimization: Top-level imports
 try:
@@ -1175,6 +1182,8 @@ def batch_predict():
     if "file" in request.files:
         file = request.files["file"]
         if file.filename.endswith(".csv"):
+            if not PANDAS_AVAILABLE:
+                return jsonify({"error": "CSV processing requires pandas which is not available in this environment"}), 503
             try:
                 df = pd.read_csv(file)
                 email_col = next(

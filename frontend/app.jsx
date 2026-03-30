@@ -212,7 +212,7 @@ function App() {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = "spamguard_batch_results.csv";
+        a.download = "mailguard_batch_results.csv";
         a.click();
     };
 
@@ -235,7 +235,7 @@ function App() {
                         <Icon name="shield-check" className="text-white" />
                     </div>
                     <span className="text-xl font-bold bg-gradient-to-r from-primary-600 to-blue-400 bg-clip-text text-transparent">
-                        SpamGuard AI
+                        MailGuard
                     </span>
                 </div>
 
