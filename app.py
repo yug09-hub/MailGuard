@@ -1368,6 +1368,8 @@ def list_models():
 @login_required
 def detect_server():
     """Auto-detect IMAP server for an email address."""
+    if not IMAP_AVAILABLE:
+        return jsonify({"error": "IMAP functionality is not available in this environment"}), 503
     data = request.get_json(force=True)
     email_address = data.get("email", "").strip()
     
