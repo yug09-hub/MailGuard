@@ -1,12 +1,100 @@
 /**
- * SpamGuard AI — Email Security Platform
+ * MailGuard — Email Security Platform
  * Frontend logic: analysis, XAI, phishing, URL scan, batch, analytics, history
  */
 
 // ── State ──────────────────────────────────────────────────────
-let selectedModel = 'nb';
+let selectedModel = 'ensemble';
 let historyFilter = 'all';
+let inboxFilter = 'all';
 let charts = {};
+let imapSession = null;
+let autoRefreshInterval = null;
+let currentInboxEmails = [];
+let isLoading = false;
+let lastAnalysisResult = null;
+let lastAnalysisText = '';
+
+// ── Loading Overlay Functions ───────────────────────────────────
+function showLoading(message = 'Analyzing') {
+    isLoading = true;
+    let overlay = document.getElementById('loadingOverlay');
+    
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'loadingOverlay';
+        overlay.className = 'loading-overlay';
+        overlay.innerHTML = `
+            <div class="ai-loader">
+                <div class="ai-loader-ring"></div>
+                <div class="ai-loader-ring"></div>
+                <div class="ai-loader-ring"></div>
+                <div class="ai-loader-core">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                    </svg>
+                </div>
+            </div>
+            <div class="loading-text"><span class="loading-dots">${message}</span></div>
+        `;
+        document.body.appendChild(overlay);
+    } else {
+        overlay.querySelector('.loading-dots').textContent = message;
+    }
+    
+    requestAnimationFrame(() => overlay.classList.add('active'));
+}
+
+function hideLoading() {
+    isLoading = false;
+    const overlay = document.getElementById('loadingOverlay');
+    if (overlay) {
+        overlay.classList.remove('active');
+        setTimeout(() => overlay.remove(), 300);
+    }
+}
+
+function updateLoadingMessage(message) {
+    const dots = document.querySelector('.loading-dots');
+    if (dots) dots.textContent = message;
+}
+
+// ── Empty State Renderer ────────────────────────────────────────
+function renderEmptyState(container, config) {
+    const { icon, title, description, action, actionText, actionIcon } = config;
+    
+    container.innerHTML = `
+        <div class="empty-state">
+            <div class="empty-state-icon">
+                <i data-lucide="${icon || 'inbox'}"></i>
+            </div>
+            <h4 class="empty-state-title">${title || 'No Data'}</h4>
+            <p class="empty-state-description">${description || 'There\'s nothing here yet.'}</p>
+            ${action ? `
+                <button class="empty-state-action" onclick="${action}">
+                    ${actionIcon ? `<i data-lucide="${actionIcon}"></i>` : ''}
+                    <span>${actionText || 'Get Started'}</span>
+                </button>
+            ` : ''}
+        </div>
+    `;
+    
+    if (window.lucide) lucide.createIcons();
+}
+
+// ── Skeleton Loading ────────────────────────────────────────────
+function renderSkeleton(container, count = 3) {
+    let html = '';
+    for (let i = 0; i < count; i++) {
+        html += `
+            <div class="skeleton-item" style="margin-bottom: 12px;">
+                <div class="skeleton" style="width: ${60 + Math.random() * 40}%; height: 16px; margin-bottom: 8px;"></div>
+                <div class="skeleton" style="width: ${40 + Math.random() * 50}%; height: 14px;"></div>
+            </div>
+        `;
+    }
+    container.innerHTML = html;
+}
 
 // ── Samples ────────────────────────────────────────────────────
 const SAMPLES = {
@@ -129,6 +217,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load initial data
     loadStats();
     loadHistory();
+    checkExistingSession();
+    loadUserInfo();
     if (window.lucide) lucide.createIcons();
 });
 
@@ -159,30 +249,50 @@ function updateThemeUI(theme) {
 
 // ── Navigation ─────────────────────────────────────────────────
 function switchPanel(name) {
-    // Hide all panels
-    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    // Get current active panel
+    const currentPanel = document.querySelector('.panel.active');
+    const targetPanel = document.getElementById(`panel-${name}`);
+    
+    if (currentPanel === targetPanel) return; // Same panel, do nothing
+    
+    // Animate out current panel
+    if (currentPanel) {
+        currentPanel.style.opacity = '0';
+        currentPanel.style.transform = 'translateY(-10px)';
+        
+        setTimeout(() => {
+            currentPanel.classList.remove('active');
+            currentPanel.style.opacity = '';
+            currentPanel.style.transform = '';
+        }, 200);
+    }
+    
+    // Update nav items
     document.querySelectorAll('.nav-item[data-panel]').forEach(n => n.classList.remove('active'));
-
-    // Show target
-    const panel = document.getElementById(`panel-${name}`);
-    if (panel) panel.classList.add('active');
-
     const navItem = document.querySelector(`.nav-item[data-panel="${name}"]`);
     if (navItem) navItem.classList.add('active');
+
+    // Show target panel with animation
+    setTimeout(() => {
+        if (targetPanel) {
+            targetPanel.classList.add('active');
+        }
+    }, 200);
 
     // Update title
     const titles = {
         analyze: 'Email Analysis',
         batch: 'Batch Processing',
+        inbox: 'Live Inbox',
         analytics: 'Analytics Dashboard',
-        history: 'Analysis History',
-        api: 'API Documentation'
+        history: 'Analysis History'
     };
     document.getElementById('pageTitle').textContent = titles[name] || 'Dashboard';
 
     // Load data for panel
     if (name === 'analytics') loadAnalytics();
     if (name === 'history') loadHistory();
+    if (name === 'inbox') checkExistingSession();
 
     closeSidebar();
 }
@@ -197,13 +307,6 @@ function closeSidebar() {
     document.getElementById('sidebarOverlay').classList.remove('active');
 }
 
-// ── Model Selection ────────────────────────────────────────────
-function selectModel(key) {
-    selectedModel = key;
-    document.querySelectorAll('.model-chip').forEach(c => {
-        c.classList.toggle('active', c.dataset.model === key);
-    });
-}
 
 // ── Stats ──────────────────────────────────────────────────────
 async function loadStats() {
@@ -264,6 +367,15 @@ async function classifyEmail() {
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner"></span> Analyzing...';
 
+    // Show loading overlay (near-instant updates)
+    showLoading('Initializing AI Engine');
+    
+    // Instead of hardcoded delays, we'll just update the status quickly
+    // or let the backend response trigger the next phase.
+    const updateStatus = (msg) => updateLoadingMessage(msg);
+    
+    setTimeout(() => updateStatus('Running AI Analysis...'), 100);
+
     try {
         const res = await fetch('/api/predict', {
             method: 'POST',
@@ -273,25 +385,32 @@ async function classifyEmail() {
         const d = await res.json();
 
         if (d.error) {
+            hideLoading();
             showToast(d.error, 'danger');
             return;
         }
+
+        // Final loading message before showing results
+        updateLoadingMessage('Rendering results');
+        
+        hideLoading();
+
+        // Store for PDF report
+        lastAnalysisResult = d;
+        lastAnalysisText = text;
 
         renderResult(d);
         renderXAI(d);
         renderPhishing(d.phishing);
         renderURLScan(d.url_scan);
         renderIntelligence(d.intelligence);
-        renderHighlightedEmail(d.highlighted_text);
+        renderHighlightedEmail(d.highlighted_text, d.prediction);
 
         loadHistory();
         loadStats();
-
-        showToast(
-            d.prediction === 'spam' ? 'Spam detected!' : 'Email looks safe.',
-            d.prediction === 'spam' ? 'danger' : 'success'
-        );
     } catch (err) {
+        messageTimeouts.forEach(t => clearTimeout(t));
+        hideLoading();
         showToast('Network error. Is server running?', 'danger');
     } finally {
         btn.disabled = false;
@@ -301,306 +420,306 @@ async function classifyEmail() {
 
 // ── Render Result Verdict ──────────────────────────────────────
 function renderResult(d) {
+    // Show/Hide containers
     document.getElementById('resultPlaceholder').style.display = 'none';
-    const box = document.getElementById('resultBox');
-    box.style.display = 'block';
+    document.getElementById('analysisResults').style.display = 'block';
+    document.getElementById('analysisEvidence').style.display = 'block';
 
     const isSpam = d.prediction === 'spam';
-
-    box.innerHTML = `
-        <div class="result-verdict ${isSpam ? 'spam' : 'ham'}">
-            <div class="verdict-icon">${isSpam ? '<i data-lucide="alert-triangle" style="width:48px;height:48px;stroke-width:1.5"></i>' : '<i data-lucide="shield-check" style="width:48px;height:48px;stroke-width:1.5"></i>'}</div>
-            <div class="verdict-label ${isSpam ? 'spam' : 'ham'}">${isSpam ? 'SPAM DETECTED' : 'SAFE EMAIL'}</div>
-            <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">Model: ${d.model_name || 'Naive Bayes'}</div>
-        </div>
-
-        <div class="confidence-meter">
-            <div class="meter-header">
-                <span>Confidence</span>
-                <span>${d.confidence}%</span>
+    
+    // 1. Render Verdict Header
+    const vHeader = document.getElementById('verdictHeader');
+    vHeader.innerHTML = `
+        <div class="verdict-header-box">
+            <div class="verdict-badge ${isSpam ? 'spam' : 'safe'}">
+                ${isSpam ? '<i data-lucide="alert-triangle"></i> SPAM DETECTED' : '<i data-lucide="shield-check"></i> SAFE EMAIL'}
             </div>
-            <div class="meter-bar">
-                <div class="meter-fill ${isSpam ? 'danger' : ''}" style="width: 0%;" id="confidenceFill"></div>
-            </div>
-        </div>
-
-        <div class="prob-boxes">
-            <div class="prob-box spam">
-                <div class="prob-value">${d.spam_probability}%</div>
-                <div class="prob-label">Spam Probability</div>
-            </div>
-            <div class="prob-box ham">
-                <div class="prob-value">${d.ham_probability}%</div>
-                <div class="prob-label">Ham Probability</div>
-            </div>
+            <div class="verdict-subtitle">Analyzed by Unified AI Engine • ${d.model_name || 'Ensemble'}</div>
         </div>
     `;
 
-    // Animate confidence bar
+    // 2. Render Risk Meter (SVG Gauge)
+    renderRiskMeter(d.spam_probability);
+
+    // 3. Render Confidence Bars
+    renderConfidenceBars(d);
+
+    // 4. Render Model Votes (if ensemble)
+    const votesDiv = document.getElementById('modelVotes');
+    if (d.model_used === 'ensemble' && d.individual_predictions) {
+        votesDiv.style.display = 'grid';
+        votesDiv.innerHTML = Object.entries(d.individual_predictions).map(([key, data]) => {
+            const mSpam = data.prediction === 'spam';
+            return `
+                <div class="vote-card">
+                    <div class="vote-name">${data.model_name}</div>
+                    <div class="vote-result ${mSpam ? 'spam' : 'safe'}">${mSpam ? 'SPAM' : 'SAFE'}</div>
+                </div>
+            `;
+        }).join('');
+    } else {
+        votesDiv.style.display = 'none';
+    }
+
+    if (window.lucide) lucide.createIcons();
+}
+
+function renderRiskMeter(score) {
+    const container = document.getElementById('riskMeterContainer');
+    const color = score > 70 ? '#ef4444' : (score > 30 ? '#f59e0b' : '#06d6a0');
+    const radius = 30;
+    const circumference = 2 * Math.PI * radius;
+    const offset = circumference - (score / 100) * circumference;
+
+    container.innerHTML = `
+        <div class="gauge-container">
+            <svg class="gauge-svg" width="70" height="70">
+                <circle class="gauge-bg" cx="35" cy="35" r="${radius}"></circle>
+                <circle class="gauge-fill" cx="35" cy="35" r="${radius}" 
+                    style="stroke: ${color}; stroke-dasharray: ${circumference}; stroke-dashoffset: ${circumference};">
+                </circle>
+            </svg>
+            <div class="gauge-text" style="color: ${color}">${Math.round(score)}%</div>
+        </div>
+    `;
+
+    // Animate the fill
     setTimeout(() => {
-        const fill = document.getElementById('confidenceFill');
-        if (fill) fill.style.width = d.confidence + '%';
+        const fill = container.querySelector('.gauge-fill');
+        if (fill) fill.style.strokeDashoffset = offset;
     }, 100);
-    if (window.lucide) lucide.createIcons();
+}
 
-    // Add PDF download button to the result card dynamically
-    // Remove if it exists to avoid duplicates
-    const existingPdfBtn = document.getElementById('dlPdfBtn');
-    if (existingPdfBtn) existingPdfBtn.remove();
-
-    const downloadBtnHtml = `
-        <button id="dlPdfBtn" onclick="downloadPDFReport()" style="width: 100%; margin-top: 20px; padding: 10px; border-radius: 8px; font-weight: 500; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; transition: background 0.2s;" class="btn btn-secondary">
-            <i data-lucide="download" style="width: 16px; height: 16px;"></i> Download PDF Report
-        </button>
+function renderConfidenceBars(d) {
+    const container = document.getElementById('confidenceBars');
+    const isSpam = d.prediction === 'spam';
+    
+    container.innerHTML = `
+        <div class="conf-bar-item">
+            <div class="conf-label">SPAM</div>
+            <div class="conf-progress">
+                <div class="conf-fill" style="width: 0%; background: #ef4444;" id="spamConfFill"></div>
+            </div>
+            <div class="conf-val">${d.spam_probability}%</div>
+        </div>
+        <div class="conf-bar-item">
+            <div class="conf-label">SAFE</div>
+            <div class="conf-progress">
+                <div class="conf-fill" style="width: 0%; background: #06d6a0;" id="hamConfFill"></div>
+            </div>
+            <div class="conf-val">${d.ham_probability}%</div>
+        </div>
     `;
-    box.insertAdjacentHTML('beforeend', downloadBtnHtml);
-    if (window.lucide) lucide.createIcons();
+
+    setTimeout(() => {
+        document.getElementById('spamConfFill').style.width = d.spam_probability + '%';
+        document.getElementById('hamConfFill').style.width = d.ham_probability + '%';
+    }, 200);
 }
 
 // ── Download PDF Report ────────────────────────────────────────
 function downloadPDFReport() {
+    if (!lastAnalysisResult) {
+        showToast('No analysis data available. Analyze an email first.', 'warning');
+        return;
+    }
+
     const btn = document.getElementById('dlPdfBtn');
     const originalText = btn.innerHTML;
     btn.innerHTML = '<span class="spinner" style="width: 16px; height: 16px;"></span> Generating PDF...';
     btn.disabled = true;
 
-    // We target the parent container of the results
-    const element = document.querySelector('.result-panel');
-
-    // Temporary styling changes to make the PDF look better
-    const originalBackground = element.style.background;
-    element.style.background = 'white'; // Force white background for PDF
-    element.style.padding = '20px';
-    element.style.borderRadius = '0';
-
-    // Hide the download button itself in the PDF
-    btn.style.display = 'none';
-
-    const opt = {
-        margin: 0.5,
-        filename: 'SpamGuard_Analysis_Report.pdf',
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
-        jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
-    };
-
-    // New Promise-based usage:
-    html2pdf().set(opt).from(element).save().then(() => {
-        // Restore styling after generation
-        element.style.background = originalBackground;
-        element.style.padding = '';
-        element.style.borderRadius = '';
-        btn.style.display = 'flex';
+    // Send data to server for PDF generation
+    fetch('/api/generate-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            result: lastAnalysisResult,
+            email_text: lastAnalysisText
+        })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to generate PDF');
+        }
+        return response.blob();
+    })
+    .then(blob => {
+        // Create download link
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        
+        // Extract filename from Content-Disposition header or generate
+        const now = new Date();
+        const reportId = `MG-${now.toISOString().split('T')[0].replace(/-/g, '')}-${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}`;
+        a.download = `MailGuard_Report_${reportId}.pdf`;
+        
+        document.body.appendChild(a);
+        a.click();
+        
+        // Cleanup
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
         btn.innerHTML = originalText;
         btn.disabled = false;
-        showToast('PDF downloaded successfully!', 'success');
-    }).catch(err => {
-        console.error('PDF Generation Error:', err);
-        element.style.background = originalBackground;
-        element.style.padding = '';
-        element.style.borderRadius = '';
-        btn.style.display = 'flex';
+        showToast('Report downloaded successfully', 'success');
+    })
+    .catch(err => {
+        console.error('[PDF] Error:', err);
         btn.innerHTML = originalText;
         btn.disabled = false;
-        showToast('Failed to generate PDF.', 'danger');
+        showToast('Failed to generate PDF: ' + err.message, 'danger');
     });
 }
 
 // ── Render XAI ─────────────────────────────────────────────────
 function renderXAI(d) {
-    const card = document.getElementById('xaiCard');
     const kwDiv = document.getElementById('xaiKeywords');
     const contribDiv = document.getElementById('xaiContributions');
 
-    if (!d.detected_keywords || d.detected_keywords.length === 0) {
-        card.style.display = 'none';
+    if (!d.keyword_contributions || d.keyword_contributions.length === 0) {
         return;
     }
-    card.style.display = 'block';
+
+    const isSpam = d.prediction === 'spam';
 
     // Keyword tags
     kwDiv.innerHTML = d.detected_keywords.map(kw =>
-        `<span class="keyword-tag"><i data-lucide="key" class="inline-icon" style="width:12px;height:12px"></i> ${escapeHtml(kw)}</span>`
+        `<span class="xai-tag ${isSpam ? 'spam' : 'safe'}">${escapeHtml(kw)}</span>`
     ).join('');
 
     // Contribution bars
-    if (d.keyword_contributions && d.keyword_contributions.length > 0) {
-        const maxContrib = Math.max(...d.keyword_contributions.map(k => Math.abs(k.contribution)));
-        contribDiv.innerHTML = d.keyword_contributions.slice(0, 8).map(k => {
-            const pct = maxContrib > 0 ? (Math.abs(k.contribution) / maxContrib * 100) : 0;
-            return `
-                <div class="contribution-bar">
-                    <span class="cb-word">${escapeHtml(k.word)}</span>
-                    <div class="cb-bar-wrap">
-                        <div class="cb-bar" style="width: ${pct}%;"></div>
-                    </div>
-                    <span class="cb-value">${k.contribution.toFixed(3)}</span>
+    const maxContrib = Math.max(...d.keyword_contributions.map(k => Math.abs(k.contribution)));
+    contribDiv.innerHTML = d.keyword_contributions.slice(0, 6).map(k => {
+        const isPositive = k.contribution > 0;
+        const color = isPositive ? '#ef4444' : '#06d6a0';
+        const pct = maxContrib > 0 ? (Math.abs(k.contribution) / maxContrib * 100) : 0;
+        
+        return `
+            <div class="conf-bar-item" style="margin-bottom: 8px;">
+                <div class="conf-label" style="width: 80px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(k.word)}</div>
+                <div class="conf-progress">
+                    <div class="conf-fill" style="width: 0%; background: ${color};" data-width="${pct}"></div>
                 </div>
-            `;
-        }).join('');
-    } else {
-        contribDiv.innerHTML = '';
-    }
+                <div class="conf-val" style="width: 45px;">${k.contribution > 0 ? '+' : ''}${k.contribution.toFixed(3)}</div>
+            </div>
+        `;
+    }).join('');
+
+    // Animate bars
+    setTimeout(() => {
+        contribDiv.querySelectorAll('.conf-fill').forEach(bar => {
+            bar.style.width = bar.getAttribute('data-width') + '%';
+        });
+    }, 300);
+
     if (window.lucide) lucide.createIcons();
 }
 
 // ── Render Phishing ────────────────────────────────────────────
 function renderPhishing(phishing) {
-    const card = document.getElementById('phishingCard');
     const div = document.getElementById('phishingResult');
-
     if (!phishing) {
-        card.style.display = 'none';
+        div.innerHTML = '<p style="color:var(--text-muted); font-size:12px;">No phishing analysis available.</p>';
         return;
     }
-    card.style.display = 'block';
 
-    const level = phishing.risk_level.toLowerCase();
-
-    let threatsHtml = '';
-    if (phishing.threats && phishing.threats.length > 0) {
-        threatsHtml = phishing.threats.map(t => `
-            <div class="threat-item severity-${t.severity}">
-                <span class="threat-icon"><i data-lucide="shield-alert"></i></span>
+    const threats = phishing.threats || [];
+    if (threats.length === 0) {
+        div.innerHTML = `
+            <div class="threat-row low">
                 <div class="threat-info">
-                    <div class="threat-type">${escapeHtml(t.type)}</div>
-                    <div class="threat-detail">${escapeHtml(t.details)}</div>
-                    ${t.matches && t.matches.length > 0 ? `
-                        <div class="threat-matches">
-                            ${t.matches.slice(0, 4).map(m => `<span class="threat-match-tag">${escapeHtml(m)}</span>`).join('')}
-                        </div>
-                    ` : ''}
+                    <h5>Clean Scan</h5>
+                    <p>No phishing indicators detected in this email.</p>
                 </div>
             </div>
-        `).join('');
-    } else {
-        threatsHtml = '<div class="empty-state" style="padding:20px;"><div class="empty-icon"><i data-lucide="check-circle" style="width:48px;height:48px"></i></div><div class="empty-text">No threats detected</div></div>';
+        `;
+        return;
     }
 
-    div.innerHTML = `
-        <div class="risk-gauge">
-            <div class="risk-score-circle ${level}">
-                <div class="risk-score-value">${phishing.risk_score}</div>
-                <div class="risk-score-label">Risk Score</div>
+    div.innerHTML = threats.map(t => `
+        <div class="threat-row ${t.severity === 'high' ? 'high' : (t.severity === 'medium' ? 'med' : 'low')}">
+            <div class="threat-info">
+                <h5>${escapeHtml(t.type)}</h5>
+                <p>${escapeHtml(t.details)}</p>
             </div>
-            <span class="risk-level-badge ${level}">${phishing.risk_level} Risk</span>
         </div>
-        <div style="margin-top: 16px;">
-            <h4 style="font-size:13px; font-weight:700; color:var(--text-heading); margin-bottom:12px;">
-                Detected Threats (${phishing.threat_count})
-            </h4>
-            ${threatsHtml}
-        </div>
-    `;
+    `).join('');
+    
     if (window.lucide) lucide.createIcons();
 }
 
 // ── Render URL Scan ────────────────────────────────────────────
 function renderURLScan(urlScan) {
-    const card = document.getElementById('urlCard');
     const div = document.getElementById('urlResult');
-
     if (!urlScan || urlScan.length === 0) {
-        card.style.display = 'none';
+        div.innerHTML = '<p style="color:var(--text-muted); font-size:12px;">No URLs detected in email.</p>';
         return;
     }
-    card.style.display = 'block';
 
     div.innerHTML = `
-        <table class="url-table">
-            <thead>
-                <tr>
-                    <th>URL</th>
-                    <th>HTTPS</th>
-                    <th>Domain Trust</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${urlScan.map(u => {
-        const statusClass = u.status === 'Safe' ? 'safe' : u.status === 'Suspicious' ? 'suspicious' : 'high-risk';
-        return `
-                        <tr>
-                            <td class="url-text" title="${escapeHtml(u.url)}">${escapeHtml(u.url)}</td>
-                            <td>${u.is_https ? '<i data-lucide="lock" class="inline-icon" style="color:var(--accent-cyan)"></i>' : '<i data-lucide="unlock" class="inline-icon" style="color:#ef4444"></i>'}</td>
-                            <td>${u.is_trusted ? '<i data-lucide="check-circle" class="inline-icon" style="color:var(--accent-cyan)"></i> Trusted' : u.is_shortener ? '<i data-lucide="link-2" class="inline-icon"></i> Shortener' : '<i data-lucide="help-circle" class="inline-icon"></i> Unknown'}</td>
-                            <td><span class="status-badge ${statusClass}">${u.status}</span></td>
-                        </tr>
-                    `;
-    }).join('')}
-            </tbody>
-        </table>
-        ${urlScan.some(u => u.flags && u.flags.length > 0) ? `
-            <div style="margin-top: 12px;">
-                <p style="font-size:12px; color:var(--text-muted); font-weight:600; margin-bottom:6px;"><i data-lucide="flag" class="inline-icon" style="width:12px;height:12px"></i> Flags:</p>
-                ${urlScan.filter(u => u.flags && u.flags.length > 0).map(u =>
-        u.flags.map(f => `<span class="threat-match-tag" style="margin:2px;">${escapeHtml(f)}</span>`).join('')
-    ).join('')}
-            </div>
-        ` : ''}
+        <div style="max-height: 150px; overflow-y: auto;">
+            ${urlScan.map(u => {
+                const isShortener = u.is_shortener;
+                const riskClass = u.status === 'Safe' ? 'low' : (u.status === 'Suspicious' ? 'med' : 'high');
+                return `
+                    <div class="threat-row ${riskClass}" style="padding: 6px 10px;">
+                        <div class="threat-info">
+                            <h5 style="font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px;">
+                                ${escapeHtml(u.url)}
+                            </h5>
+                            <p style="font-size: 10px;">${u.is_https ? 'HTTPS' : 'HTTP'} • ${u.is_trusted ? 'Trusted' : 'Unknown'} ${isShortener ? '• Shortener' : ''}</p>
+                        </div>
+                    </div>
+                `;
+            }).join('')}
+        </div>
     `;
-    if (window.lucide) lucide.createIcons();
 }
 
 // ── Render Email Intelligence ──────────────────────────────────
 function renderIntelligence(intel) {
-    const card = document.getElementById('intelCard');
     const div = document.getElementById('intelResult');
-
-    if (!intel) {
-        card.style.display = 'none';
-        return;
-    }
-    card.style.display = 'block';
+    if (!intel) return;
 
     const sentimentColor = intel.sentiment === 'Positive' ? 'var(--accent-cyan)' :
         intel.sentiment === 'Negative' ? '#ef4444' : 'var(--accent-orange)';
 
     div.innerHTML = `
-        <div class="intel-grid">
-            <div class="intel-item">
-                <div class="intel-value"><i data-lucide="globe"></i></div>
-                <div class="intel-label">${escapeHtml(intel.language)}</div>
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+            <div class="vote-card" style="text-align: left;">
+                <div class="vote-name">Language</div>
+                <div class="vote-result" style="color: var(--text-heading)">${escapeHtml(intel.language)}</div>
             </div>
-            <div class="intel-item">
-                <div class="intel-value" style="color:${sentimentColor};">${intel.sentiment}</div>
-                <div class="intel-label">Sentiment</div>
+            <div class="vote-card" style="text-align: left;">
+                <div class="vote-name">Sentiment</div>
+                <div class="vote-result" style="color: ${sentimentColor}">${intel.sentiment}</div>
             </div>
-            <div class="intel-item">
-                <div class="intel-value">${intel.word_count}</div>
-                <div class="intel-label">Words</div>
+            <div class="vote-card" style="text-align: left;">
+                <div class="vote-name">Words</div>
+                <div class="vote-result" style="color: var(--text-heading)">${intel.word_count}</div>
             </div>
-            <div class="intel-item">
-                <div class="intel-value">${intel.link_count}</div>
-                <div class="intel-label">Links</div>
-            </div>
-            <div class="intel-item">
-                <div class="intel-value" style="color: ${intel.suspicious_keyword_count > 3 ? '#ef4444' : 'var(--text-heading)'};">${intel.suspicious_keyword_count}</div>
-                <div class="intel-label">Suspicious Keywords</div>
-            </div>
-            <div class="intel-item">
-                <div class="intel-value">${intel.length_category}</div>
-                <div class="intel-label">Email Length</div>
+            <div class="vote-card" style="text-align: left;">
+                <div class="vote-name">Links</div>
+                <div class="vote-result" style="color: ${intel.link_count > 0 ? '#f59e0b' : 'var(--text-heading)'}">${intel.link_count}</div>
             </div>
         </div>
     `;
-    if (window.lucide) lucide.createIcons();
 }
 
 // ── Render Highlighted Email ───────────────────────────────────
-function renderHighlightedEmail(text) {
-    const card = document.getElementById('highlightCard');
+function renderHighlightedEmail(text, prediction) {
     const div = document.getElementById('highlightedEmail');
+    if (!text) return;
 
-    if (!text) {
-        card.style.display = 'none';
-        return;
-    }
-    card.style.display = 'block';
+    const isSpam = prediction === 'spam';
+    const hClass = isSpam ? 'highlight-word' : 'highlight-word safe';
 
-    // Replace [[HIGHLIGHT]] markers with styled spans
     let html = escapeHtml(text);
-    html = html.replace(/\[\[HIGHLIGHT\]\]/g, '<span class="highlight-word">');
+    html = html.replace(/\[\[HIGHLIGHT\]\]/g, `<span class="${hClass}">`);
     html = html.replace(/\[\[\/HIGHLIGHT\]\]/g, '</span>');
 
     div.innerHTML = html;
@@ -757,7 +876,14 @@ async function loadHistory() {
         if (badge) badge.textContent = items.length;
 
         if (items.length === 0) {
-            list.innerHTML = '<div class="empty-state"><div class="empty-icon"><i data-lucide="inbox" style="width:48px;height:48px"></i></div><div class="empty-text">No results found</div></div>';
+            renderEmptyState(list, {
+                icon: 'inbox',
+                title: 'No Analysis History',
+                description: 'Your analyzed emails will appear here. Start by analyzing an email to build your history.',
+                action: "switchPanel('analyze')",
+                actionText: 'Analyze Email',
+                actionIcon: 'scan-search'
+            });
             return;
         }
 
@@ -984,17 +1110,44 @@ function loadSample(type) {
 }
 
 function clearInput() {
+    // Clear input fields
     document.getElementById('emailInput').value = '';
     document.getElementById('emailFile').value = '';
     document.getElementById('charCount').textContent = '0 chars';
-    document.getElementById('resultBox').style.display = 'none';
+    
+    // Show placeholder, hide results
     document.getElementById('resultPlaceholder').style.display = 'block';
-
-    // Hide analysis panels
-    ['xaiCard', 'highlightCard', 'phishingCard', 'urlCard', 'intelCard'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.style.display = 'none';
-    });
+    document.getElementById('analysisResults').style.display = 'none';
+    document.getElementById('analysisEvidence').style.display = 'none';
+    
+    // Clear all analysis content
+    const verdictHeader = document.getElementById('verdictHeader');
+    const riskMeterContainer = document.getElementById('riskMeterContainer');
+    const confidenceBars = document.getElementById('confidenceBars');
+    const modelVotes = document.getElementById('modelVotes');
+    const phishingResult = document.getElementById('phishingResult');
+    const urlResult = document.getElementById('urlResult');
+    const intelResult = document.getElementById('intelResult');
+    const highlightedEmail = document.getElementById('highlightedEmail');
+    const xaiKeywords = document.getElementById('xaiKeywords');
+    const xaiContributions = document.getElementById('xaiContributions');
+    
+    if (verdictHeader) verdictHeader.innerHTML = '';
+    if (riskMeterContainer) riskMeterContainer.innerHTML = '';
+    if (confidenceBars) confidenceBars.innerHTML = '';
+    if (modelVotes) modelVotes.innerHTML = '';
+    if (phishingResult) phishingResult.innerHTML = '';
+    if (urlResult) urlResult.innerHTML = '';
+    if (intelResult) intelResult.innerHTML = '';
+    if (highlightedEmail) highlightedEmail.innerHTML = '';
+    if (xaiKeywords) xaiKeywords.innerHTML = '';
+    if (xaiContributions) xaiContributions.innerHTML = '';
+    
+    // Reset state variables
+    lastAnalysisResult = null;
+    lastAnalysisText = '';
+    
+    showToast('Analysis cleared', 'info');
 }
 
 function escapeHtml(s) {
@@ -1002,4 +1155,490 @@ function escapeHtml(s) {
     const div = document.createElement('div');
     div.textContent = s;
     return div.innerHTML;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// IMAP Inbox Integration
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function togglePasswordVisibility(inputId) {
+    const input = document.getElementById(inputId);
+    const type = input.type === 'password' ? 'text' : 'password';
+    input.type = type;
+}
+
+function toggleAdvancedSettings() {
+    const group = document.getElementById('imapServerGroup');
+    group.style.display = group.style.display === 'none' ? 'block' : 'none';
+}
+
+async function detectIMAPServer() {
+    const email = document.getElementById('imapEmail').value.trim();
+    if (!email || !email.includes('@')) return;
+    
+    try {
+        const res = await fetch('/api/imap/detect-server', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+        
+        if (data.imap_server) {
+            document.getElementById('imapServer').placeholder = `Auto-detected: ${data.imap_server}`;
+        }
+    } catch (err) {
+        console.error('Failed to detect server:', err);
+    }
+}
+
+function clearInboxFields() {
+    document.getElementById('imapEmail').value = '';
+    document.getElementById('imapPassword').value = '';
+    const serverInput = document.getElementById('imapServer');
+    if (serverInput) {
+        serverInput.value = '';
+        serverInput.placeholder = 'Auto-detected';
+    }
+    showToast('Credentials cleared', 'info');
+}
+
+async function connectInbox() {
+    const email = document.getElementById('imapEmail').value.trim();
+    const password = document.getElementById('imapPassword').value.trim();
+    const imapServer = document.getElementById('imapServer').value.trim();
+    
+    if (!email || !email.includes('@')) {
+        showToast('Please enter a valid email address', 'warning');
+        return;
+    }
+    if (!password) {
+        showToast('Please enter your app password', 'warning');
+        return;
+    }
+    
+    const btn = document.getElementById('connectInboxBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Connecting...';
+    
+    try {
+        const res = await fetch('/api/imap/connect', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password, imap_server: imapServer })
+        });
+        const data = await res.json();
+        
+        if (data.error) {
+            showToast('Error: ' + data.error, 'danger');
+            return;
+        }
+        
+        // Save session
+        imapSession = {
+            session_id: data.session_id,
+            email: data.email
+        };
+        localStorage.setItem('imapSession', JSON.stringify(imapSession));
+        
+        // Clear password field
+        document.getElementById('imapPassword').value = '';
+        
+        showToast('Connected successfully!', 'success');
+        showConnectedState();
+        refreshInbox();
+        
+    } catch (err) {
+        showToast('Connection failed. For Gmail, you must use an App Password (not your regular password). Click "Gmail" link below for instructions.', 'danger');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i data-lucide="link" class="inline-icon"></i> Connect Inbox';
+        if (window.lucide) lucide.createIcons();
+    }
+}
+
+async function disconnectInbox() {
+    if (!imapSession) return;
+    
+    // Stop auto-refresh
+    stopAutoRefresh();
+    
+    try {
+        await fetch('/api/imap/disconnect', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ session_id: imapSession.session_id })
+        });
+    } catch (err) {
+        console.error('Disconnect error:', err);
+    }
+    
+    // Clear session
+    imapSession = null;
+    localStorage.removeItem('imapSession');
+    currentInboxEmails = [];
+    
+    showToast('Disconnected', 'info');
+    showConnectState();
+}
+
+async function checkExistingSession() {
+    const saved = localStorage.getItem('imapSession');
+    if (!saved) {
+        showConnectState();
+        return;
+    }
+    
+    try {
+        imapSession = JSON.parse(saved);
+        
+        // Check if it's a demo session
+        if (imapSession.demo) {
+            showConnectedState();
+            loadDemoEmails();
+            return;
+        }
+        
+        // Verify session is still valid
+        const res = await fetch(`/api/imap/session/${imapSession.session_id}`);
+        if (res.ok) {
+            showConnectedState();
+            loadFetchedEmails();
+        } else {
+            // Session expired
+            imapSession = null;
+            localStorage.removeItem('imapSession');
+            showConnectState();
+        }
+    } catch (err) {
+        showConnectState();
+    }
+}
+
+function showConnectState() {
+    document.getElementById('inboxConnectCard').style.display = 'block';
+    document.getElementById('inboxConnectedCard').style.display = 'none';
+}
+
+function showConnectedState() {
+    document.getElementById('inboxConnectCard').style.display = 'none';
+    document.getElementById('inboxConnectedCard').style.display = 'block';
+    document.getElementById('connectedEmail').textContent = imapSession?.email || '';
+}
+
+async function refreshInbox() {
+    if (!imapSession) return;
+    
+    // Handle demo mode
+    if (imapSession.demo) {
+        loadDemoEmails();
+        return;
+    }
+    
+    const emailList = document.getElementById('emailList');
+    emailList.innerHTML = `
+        <div class="empty-state">
+            <div class="empty-icon"><span class="spinner" style="width:48px;height:48px;"></span></div>
+            <div class="empty-text">Fetching emails...</div>
+        </div>
+    `;
+    
+    try {
+        const res = await fetch('/api/imap/fetch', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ session_id: imapSession.session_id, limit: 30 })
+        });
+        const data = await res.json();
+        
+        if (data.error) {
+            showToast(data.error, 'danger');
+            emailList.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon"><i data-lucide="alert-triangle" style="width:48px;height:48px"></i></div>
+                    <div class="empty-text">Failed to fetch emails</div>
+                </div>
+            `;
+            if (window.lucide) lucide.createIcons();
+            return;
+        }
+        
+        currentInboxEmails = data.emails || [];
+        document.getElementById('lastFetchTime').textContent = 'Just now';
+        document.getElementById('inboxCount').textContent = currentInboxEmails.length;
+        document.getElementById('inboxCount').style.display = 'inline-flex';
+        
+        renderInboxEmails();
+        showToast(`Fetched ${data.count} emails`, 'success');
+        
+    } catch (err) {
+        showToast('Failed to fetch emails', 'danger');
+        emailList.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-icon"><i data-lucide="alert-triangle" style="width:48px;height:48px"></i></div>
+                <div class="empty-text">Failed to fetch emails</div>
+            </div>
+        `;
+        if (window.lucide) lucide.createIcons();
+    }
+}
+
+async function loadFetchedEmails() {
+    if (!imapSession) return;
+    
+    try {
+        const res = await fetch(`/api/imap/emails?session_id=${imapSession.session_id}&limit=50`);
+        const data = await res.json();
+        
+        if (Array.isArray(data)) {
+            currentInboxEmails = data;
+            renderInboxEmails();
+            
+            if (data.length > 0) {
+                document.getElementById('inboxCount').textContent = data.length;
+                document.getElementById('inboxCount').style.display = 'inline-flex';
+            }
+        }
+    } catch (err) {
+        console.error('Failed to load emails:', err);
+    }
+}
+
+function renderInboxEmails() {
+    const emailList = document.getElementById('emailList');
+    
+    // Filter emails
+    let filtered = currentInboxEmails;
+    if (inboxFilter === 'spam') {
+        filtered = currentInboxEmails.filter(e => e.prediction === 'spam');
+    } else if (inboxFilter === 'ham') {
+        filtered = currentInboxEmails.filter(e => e.prediction === 'ham');
+    }
+    
+    if (filtered.length === 0) {
+        emailList.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-icon"><i data-lucide="inbox" style="width:48px;height:48px"></i></div>
+                <div class="empty-text">${inboxFilter === 'all' ? 'No emails fetched yet' : `No ${inboxFilter} emails found`}</div>
+                ${inboxFilter === 'all' ? `<button class="btn btn-primary" onclick="refreshInbox()" style="margin-top:16px;"><i data-lucide="download" class="inline-icon"></i> Fetch Emails</button>` : ''}
+            </div>
+        `;
+        if (window.lucide) lucide.createIcons();
+        return;
+    }
+    
+    emailList.innerHTML = filtered.map(email => {
+        const isSpam = email.prediction === 'spam';
+        const riskClass = (email.risk_level || 'Low').toLowerCase();
+        const date = email.date ? new Date(email.date).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+        
+        return `
+            <div class="email-item ${isSpam ? 'spam' : 'safe'}">
+                <div class="email-status">
+                    <span class="status-badge ${isSpam ? 'high-risk' : 'safe'}">${isSpam ? 'SPAM' : 'SAFE'}</span>
+                </div>
+                <div class="email-content">
+                    <div class="email-header">
+                        <span class="email-sender">${escapeHtml(email.sender || 'Unknown')}</span>
+                        <span class="email-date">${date}</span>
+                    </div>
+                    <div class="email-subject">${escapeHtml(email.subject || '(No Subject)')}</div>
+                    <div class="email-preview">${escapeHtml((email.body || '').substring(0, 120))}...</div>
+                    <div class="email-meta">
+                        <span class="email-confidence">${email.confidence?.toFixed(1) || 0}% confidence</span>
+                        <span class="risk-badge ${riskClass}">${email.risk_level || 'Low'} Risk</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    if (window.lucide) lucide.createIcons();
+}
+
+function filterInbox(filter) {
+    inboxFilter = filter;
+    
+    // Update UI
+    document.querySelectorAll('#panel-inbox .filter-chip').forEach(chip => {
+        chip.classList.toggle('active', chip.dataset.filter === filter);
+    });
+    
+    renderInboxEmails();
+}
+
+function toggleAutoRefresh() {
+    const toggle = document.getElementById('autoRefreshToggle');
+    
+    if (toggle.checked) {
+        // Start auto-refresh every 30 seconds
+        autoRefreshInterval = setInterval(() => {
+            if (imapSession) {
+                refreshInbox();
+            }
+        }, 30000);
+        showToast('Auto-refresh enabled (30s)', 'info');
+    } else {
+        stopAutoRefresh();
+        showToast('Auto-refresh disabled', 'info');
+    }
+}
+
+function stopAutoRefresh() {
+    if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+        autoRefreshInterval = null;
+    }
+    const toggle = document.getElementById('autoRefreshToggle');
+    if (toggle) toggle.checked = false;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Demo mode - connect without real credentials
+async function connectDemo() {
+    const email = document.getElementById('imapEmail').value.trim() || 'demo@example.com';
+    
+    const btn = document.getElementById('connectInboxBtn');
+    if (btn) btn.disabled = true;
+    
+    try {
+        const res = await fetch('/api/imap/connect', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password: 'demo', demo: true })
+        });
+        const data = await res.json();
+        
+        if (data.error) {
+            showToast('Error: ' + data.error, 'danger');
+            return;
+        }
+        
+        imapSession = {
+            session_id: data.session_id,
+            email: data.email,
+            demo: true
+        };
+        localStorage.setItem('imapSession', JSON.stringify(imapSession));
+        
+        showToast('Demo mode activated!', 'success');
+        showConnectedState();
+        
+        // Load demo emails
+        loadDemoEmails();
+        
+    } catch (err) {
+        console.error('Demo mode error:', err);
+        showToast('Demo mode failed: ' + err.message, 'danger');
+    } finally {
+        if (btn) btn.disabled = false;
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// User Authentication
+// ═══════════════════════════════════════════════════════════════════════════════
+
+async function loadUserInfo() {
+    try {
+        const res = await fetch('/api/auth/status');
+        const data = await res.json();
+        
+        if (data.authenticated) {
+            const userNameEl = document.getElementById('userName');
+            const userRoleEl = document.getElementById('userRole');
+            
+            if (userNameEl) userNameEl.textContent = data.user.username;
+            if (userRoleEl) {
+                userRoleEl.textContent = data.user.role;
+                if (data.user.is_admin) {
+                    userRoleEl.classList.add('admin');
+                }
+            }
+        } else {
+            // Not authenticated, redirect to login
+            window.location.href = '/login';
+        }
+    } catch (err) {
+        console.error('Failed to load user info:', err);
+    }
+}
+
+function loadDemoEmails() {
+    // Generate demo emails with classifications
+    const demoEmails = [
+        {
+            uid: '1',
+            subject: 'Congratulations! You won $1,000,000!',
+            sender: 'lottery@win-big-now.xyz',
+            date: new Date(Date.now() - 3600000).toISOString(),
+            body: 'Dear winner, you have been selected for a grand prize! Click here to claim your reward immediately! Act now!',
+            prediction: 'spam',
+            confidence: 98.5,
+            spam_probability: 98.5,
+            ham_probability: 1.5,
+            risk_score: 85,
+            risk_level: 'High'
+        },
+        {
+            uid: '2',
+            subject: 'Team Meeting - Project Update',
+            sender: 'sarah@company.com',
+            date: new Date(Date.now() - 7200000).toISOString(),
+            body: 'Hi team, Just a reminder about our weekly sync tomorrow at 2 PM. We will discuss the Q4 roadmap and review progress.',
+            prediction: 'ham',
+            confidence: 96.2,
+            spam_probability: 3.8,
+            ham_probability: 96.2,
+            risk_score: 5,
+            risk_level: 'Low'
+        },
+        {
+            uid: '3',
+            subject: 'URGENT: Your account will be suspended',
+            sender: 'security@banking-verify-alert.com',
+            date: new Date(Date.now() - 10800000).toISOString(),
+            body: 'We detected unusual activity on your account. Please verify your identity immediately by clicking this link and entering your SSN.',
+            prediction: 'spam',
+            confidence: 99.1,
+            spam_probability: 99.1,
+            ham_probability: 0.9,
+            risk_score: 95,
+            risk_level: 'High'
+        },
+        {
+            uid: '4',
+            subject: 'Invoice #1234 - Payment Received',
+            sender: 'billing@supplier.com',
+            date: new Date(Date.now() - 86400000).toISOString(),
+            body: 'Thank you for your payment. This email confirms we have received your payment for invoice #1234.',
+            prediction: 'ham',
+            confidence: 94.7,
+            spam_probability: 5.3,
+            ham_probability: 94.7,
+            risk_score: 10,
+            risk_level: 'Low'
+        },
+        {
+            uid: '5',
+            subject: 'Get Rich Quick! Work from home!',
+            sender: 'opportunity@earn-money-fast.biz',
+            date: new Date(Date.now() - 172800000).toISOString(),
+            body: 'Make $5000 per week working from home! No experience needed! Limited spots available! Sign up now!',
+            prediction: 'spam',
+            confidence: 97.8,
+            spam_probability: 97.8,
+            ham_probability: 2.2,
+            risk_score: 75,
+            risk_level: 'High'
+        }
+    ];
+    
+    currentInboxEmails = demoEmails;
+    document.getElementById('lastFetchTime').textContent = 'Just now';
+    document.getElementById('inboxCount').textContent = demoEmails.length;
+    document.getElementById('inboxCount').style.display = 'inline-flex';
+    
+    renderInboxEmails();
+    showToast('Demo emails loaded!', 'success');
 }

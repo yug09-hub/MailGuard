@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SpamGuard AI — Email Security Platform</title>
+    <title>MailGuard — Email Security Platform</title>
     <meta name="description"
         content="AI-powered email security platform with phishing detection, URL scanning, and explainable AI spam classification." />
 
@@ -22,6 +22,44 @@
 </head>
 
 <body>
+    <!-- Animated Background Elements -->
+    <div class="bg-waves">
+        <div class="wave-line wave-1">
+            <svg viewBox="0 0 2000 200" preserveAspectRatio="none">
+                <path d="M0,100 C150,50 350,150 500,100 C650,50 850,150 1000,100 C1150,50 1350,150 1500,100 C1650,50 1850,150 2000,100 L2000,200 L0,200 Z" opacity="0.4"/>
+                <path d="M0,120 C200,70 400,170 600,120 C800,70 1000,170 1200,120 C1400,70 1600,170 1800,120 C1900,90 1950,140 2000,120" stroke-width="1"/>
+            </svg>
+        </div>
+        <div class="wave-line wave-2">
+            <svg viewBox="0 0 2000 200" preserveAspectRatio="none">
+                <path d="M0,80 C180,130 420,30 600,80 C780,130 1020,30 1200,80 C1380,130 1620,30 1800,80 C1900,105 1950,55 2000,80" stroke-width="0.8"/>
+            </svg>
+        </div>
+        <div class="wave-line wave-3">
+            <svg viewBox="0 0 2000 200" preserveAspectRatio="none">
+                <path d="M0,140 C160,90 340,190 500,140 C660,90 840,190 1000,140 C1160,90 1340,190 1500,140 C1660,90 1840,190 2000,140" stroke-width="0.6"/>
+            </svg>
+        </div>
+        <div class="wave-line wave-4">
+            <svg viewBox="0 0 2000 200" preserveAspectRatio="none">
+                <path d="M0,60 C220,110 380,10 600,60 C820,110 980,10 1200,60 C1420,110 1580,10 1800,60 C1910,35 1960,85 2000,60" stroke-width="0.5"/>
+            </svg>
+        </div>
+    </div>
+    
+    <div class="bg-particles">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+    </div>
+
     <div class="app-layout">
 
         <!-- Sidebar Overlay (mobile) -->
@@ -30,9 +68,31 @@
         <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-brand">
-                <div class="brand-icon"><i data-lucide="shield-check"></i></div>
+                <div class="brand-icon">
+                    <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 28px; height: 28px;">
+                        <path d="M16 2L4 7V14C4 21.73 9.11 28.76 16 30C22.89 28.76 28 21.73 28 14V7L16 2Z" fill="url(#shieldGrad3)" stroke="url(#shieldStroke3)" stroke-width="1.5"/>
+                        <rect x="9" y="11" width="14" height="10" rx="1.5" fill="rgba(26,26,37,0.9)" stroke="url(#envelopeStroke3)" stroke-width="1"/>
+                        <path d="M9 12.5L16 17L23 12.5" stroke="url(#envelopeStroke3)" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="22" cy="21" r="4" fill="#00d4aa"/>
+                        <path d="M20.2 21L21.5 22.3L24 19.7" stroke="#1a1a25" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <defs>
+                            <linearGradient id="shieldGrad3" x1="4" y1="2" x2="28" y2="30" gradientUnits="userSpaceOnUse">
+                                <stop offset="0%" stop-color="#00d4aa"/>
+                                <stop offset="100%" stop-color="#6c5ce7"/>
+                            </linearGradient>
+                            <linearGradient id="shieldStroke3" x1="4" y1="2" x2="28" y2="30" gradientUnits="userSpaceOnUse">
+                                <stop offset="0%" stop-color="#00d4aa"/>
+                                <stop offset="100%" stop-color="#6c5ce7"/>
+                            </linearGradient>
+                            <linearGradient id="envelopeStroke3" x1="9" y1="11" x2="23" y2="21" gradientUnits="userSpaceOnUse">
+                                <stop offset="0%" stop-color="#00d4aa"/>
+                                <stop offset="100%" stop-color="#6c5ce7"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
                 <div class="brand-text">
-                    <span class="brand-name">SpamGuard AI</span>
+                    <span class="brand-name">MailGuard</span>
                     <span class="brand-tagline">Email Security Platform</span>
                 </div>
             </div>
@@ -40,38 +100,62 @@
             <nav class="sidebar-nav">
                 <div class="nav-section-label">Analysis</div>
                 <a class="nav-item active" data-panel="analyze" onclick="switchPanel('analyze')">
-                    <span class="nav-icon"><i data-lucide="scan-search"></i></span>
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="7"/>
+                            <path d="M21 21l-4.35-4.35"/>
+                            <path d="M11 8v6M8 11h6" opacity="0.5"/>
+                        </svg>
+                    </span>
                     <span>Analyze Email</span>
                 </a>
                 <a class="nav-item" data-panel="batch" onclick="switchPanel('batch')">
-                    <span class="nav-icon"><i data-lucide="layers"></i></span>
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="7" height="7" rx="1.5"/>
+                            <rect x="14" y="3" width="7" height="7" rx="1.5"/>
+                            <rect x="3" y="14" width="7" height="7" rx="1.5"/>
+                            <rect x="14" y="14" width="7" height="7" rx="1.5" opacity="0.5"/>
+                        </svg>
+                    </span>
                     <span>Batch Processing</span>
+                </a>
+                <a class="nav-item" data-panel="inbox" onclick="switchPanel('inbox')">
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8"/>
+                            <rect x="3" y="5" width="18" height="14" rx="2"/>
+                            <circle cx="18" cy="8" r="2" fill="currentColor" opacity="0.3"/>
+                        </svg>
+                    </span>
+                    <span>Live Inbox</span>
+                    <span class="nav-badge" id="inboxCount" style="display:none;">0</span>
                 </a>
 
                 <div class="nav-section-label">Intelligence</div>
                 <a class="nav-item" data-panel="analytics" onclick="switchPanel('analytics')">
-                    <span class="nav-icon"><i data-lucide="bar-chart-3"></i></span>
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 3v18h18"/>
+                            <path d="M7 16l4-4 4 4 5-6" stroke-linejoin="round"/>
+                            <circle cx="20" cy="10" r="1.5" fill="currentColor"/>
+                        </svg>
+                    </span>
                     <span>Analytics</span>
                 </a>
                 <a class="nav-item" data-panel="history" onclick="switchPanel('history')">
-                    <span class="nav-icon"><i data-lucide="clock"></i></span>
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="9"/>
+                            <path d="M12 7v5l3 3"/>
+                            <circle cx="12" cy="12" r="2" fill="currentColor" opacity="0.2"/>
+                        </svg>
+                    </span>
                     <span>History</span>
                     <span class="nav-badge" id="historyCount">0</span>
                 </a>
 
-                <div class="nav-section-label">Developer</div>
-                <a class="nav-item" data-panel="api" onclick="switchPanel('api')">
-                    <span class="nav-icon"><i data-lucide="code-2"></i></span>
-                    <span>API Docs</span>
-                </a>
             </nav>
-
-            <div class="sidebar-footer">
-                <a class="nav-item" onclick="toggleTheme()">
-                    <span class="nav-icon" id="themeIcon"><i data-lucide="moon"></i></span>
-                    <span id="themeLabel">Dark Mode</span>
-                </a>
-            </div>
         </aside>
 
         <!-- Main Content -->
@@ -80,44 +164,130 @@
             <!-- Top Bar -->
             <header class="top-bar">
                 <div class="top-bar-left">
-                    <button class="mobile-menu-btn" onclick="toggleSidebar()"><i data-lucide="menu"></i></button>
+                    <button class="mobile-menu-btn" onclick="toggleSidebar()">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                                <path d="M3 12h18M3 6h18M3 18h18"/>
+                                            </svg>
+                                        </button>
                     <h1 class="top-bar-title" id="pageTitle">Email Analysis</h1>
                 </div>
                 <div class="top-bar-right">
+                    <div class="user-menu" id="userMenu">
+                        <span class="user-name" id="userName">Loading...</span>
+                        <span class="user-role" id="userRole"></span>
+                    </div>
                     <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
                         <span class="theme-toggle-icon" id="themeToggleIcon"></span>
                     </button>
+                    <a href="/logout" class="logout-btn" title="Logout">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
+                            <polyline points="16,17 21,12 16,7"/>
+                            <line x1="21" y1="12" x2="9" y2="12"/>
+                        </svg>
+                        <span>Logout</span>
+                    </a>
                 </div>
             </header>
 
             <div class="page-content">
 
-                <!-- ── Stats Row ─────────────────────────────── -->
-                <div class="stats-grid" id="statsGrid">
-                    <div class="stat-card accent-cyan">
-                        <div class="stat-label">Accuracy</div>
-                        <div class="stat-value" id="statAccuracy">—</div>
-                        <div class="stat-icon"><i data-lucide="crosshair"></i></div>
-                    </div>
-                    <div class="stat-card accent-purple">
-                        <div class="stat-label">Precision</div>
-                        <div class="stat-value" id="statPrecision">—</div>
-                        <div class="stat-icon"><i data-lucide="locate"></i></div>
-                    </div>
-                    <div class="stat-card accent-blue">
-                        <div class="stat-label">Recall</div>
-                        <div class="stat-value" id="statRecall">—</div>
-                        <div class="stat-icon"><i data-lucide="refresh-cw"></i></div>
-                    </div>
-                    <div class="stat-card accent-pink">
-                        <div class="stat-label">F1 Score</div>
-                        <div class="stat-value" id="statF1">—</div>
-                        <div class="stat-icon"><i data-lucide="scale"></i></div>
-                    </div>
-                    <div class="stat-card accent-orange">
-                        <div class="stat-label">Analyses</div>
-                        <div class="stat-value" id="statPredictions">0</div>
-                        <div class="stat-icon"><i data-lucide="trending-up"></i></div>
+                <!-- ── Performance Dashboard Banner ─────────────────── -->
+                <div class="dashboard-banner" id="statsGrid">
+                    <div class="banner-bg-glow"></div>
+                    <div class="banner-content">
+                        <div class="banner-hero">
+                            <div class="banner-hero-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="url(#heroGrad)" stroke-width="1.5">
+                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                    <path d="M9 12l2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <defs>
+                                        <linearGradient id="heroGrad" x1="4" y1="2" x2="20" y2="22">
+                                            <stop offset="0%" stop-color="#06d6a0"/>
+                                            <stop offset="100%" stop-color="#3b82f6"/>
+                                        </linearGradient>
+                                    </defs>
+                                </svg>
+                            </div>
+                            <div class="banner-hero-text">
+                                <h2 class="banner-title">Model Performance</h2>
+                                <p class="banner-subtitle">Real-time AI classification metrics</p>
+                            </div>
+                        </div>
+                        <div class="banner-stats-row">
+                            <div class="banner-stat-item">
+                                <div class="banner-stat-icon accent-cyan">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <circle cx="12" cy="12" r="6" opacity="0.5"/>
+                                        <circle cx="12" cy="12" r="2" fill="currentColor"/>
+                                    </svg>
+                                </div>
+                                <div class="banner-stat-data">
+                                    <div class="banner-stat-value" id="statAccuracy">—</div>
+                                    <div class="banner-stat-label">Accuracy</div>
+                                </div>
+                                <div class="banner-stat-ring accent-cyan"></div>
+                            </div>
+                            <div class="banner-stat-divider"></div>
+                            <div class="banner-stat-item">
+                                <div class="banner-stat-icon accent-purple">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                                        <path d="M2 17l10 5 10-5" opacity="0.5"/>
+                                        <path d="M2 12l10 5 10-5"/>
+                                    </svg>
+                                </div>
+                                <div class="banner-stat-data">
+                                    <div class="banner-stat-value" id="statPrecision">—</div>
+                                    <div class="banner-stat-label">Precision</div>
+                                </div>
+                                <div class="banner-stat-ring accent-purple"></div>
+                            </div>
+                            <div class="banner-stat-divider"></div>
+                            <div class="banner-stat-item">
+                                <div class="banner-stat-icon accent-blue">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M1 4v6h6"/>
+                                        <path d="M23 20v-6h-6"/>
+                                        <path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/>
+                                    </svg>
+                                </div>
+                                <div class="banner-stat-data">
+                                    <div class="banner-stat-value" id="statRecall">—</div>
+                                    <div class="banner-stat-label">Recall</div>
+                                </div>
+                                <div class="banner-stat-ring accent-blue"></div>
+                            </div>
+                            <div class="banner-stat-divider"></div>
+                            <div class="banner-stat-item">
+                                <div class="banner-stat-icon accent-pink">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 3v18"/>
+                                        <path d="M16 7H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H8"/>
+                                    </svg>
+                                </div>
+                                <div class="banner-stat-data">
+                                    <div class="banner-stat-value" id="statF1">—</div>
+                                    <div class="banner-stat-label">F1 Score</div>
+                                </div>
+                                <div class="banner-stat-ring accent-pink"></div>
+                            </div>
+                            <div class="banner-stat-divider"></div>
+                            <div class="banner-stat-item">
+                                <div class="banner-stat-icon accent-orange">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M23 6l-9.5 9.5-5-5L1 18"/>
+                                        <path d="M17 6h6v6"/>
+                                    </svg>
+                                </div>
+                                <div class="banner-stat-data">
+                                    <div class="banner-stat-value" id="statPredictions">0</div>
+                                    <div class="banner-stat-label">Total Analyses</div>
+                                </div>
+                                <div class="banner-stat-ring accent-orange"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -125,23 +295,9 @@
                      PANEL: Analyze Email
                      ══════════════════════════════════════════════ -->
                 <div class="panel active" id="panel-analyze">
-
-                    <!-- Model Selector -->
-                    <div class="model-selector" id="modelSelector">
-                        <div class="model-chip active" data-model="nb" onclick="selectModel('nb')">
-                            <span class="chip-dot"></span> Naive Bayes
-                        </div>
-                        <div class="model-chip" data-model="lr" onclick="selectModel('lr')">
-                            <span class="chip-dot"></span> Logistic Regression
-                        </div>
-                        <div class="model-chip" data-model="rf" onclick="selectModel('rf')">
-                            <span class="chip-dot"></span> Random Forest
-                        </div>
-                    </div>
-
                     <div class="analyze-grid">
-                        <!-- Left: Input -->
-                        <div>
+                        <!-- Left: Input & Evidence -->
+                        <div class="analyze-input-side">
                             <div class="card">
                                 <div class="card-header">
                                     <h3><i data-lucide="mail" class="header-icon"></i> Email Content</h3>
@@ -163,19 +319,17 @@
                                         </div>
                                         <div class="sample-btns">
                                             <button class="sample-btn" onclick="loadSample('spam')"><i
-                                                    data-lucide="alert-triangle" class="inline-icon"></i> Spam
-                                                Sample</button>
+                                                    data-lucide="alert-triangle" class="inline-icon"></i> Spam</button>
                                             <button class="sample-btn" onclick="loadSample('ham')"><i
-                                                    data-lucide="check-circle" class="inline-icon"></i> Legit
-                                                Sample</button>
+                                                    data-lucide="check-circle" class="inline-icon"></i> Legit</button>
                                             <button class="sample-btn" onclick="loadSample('phishing')"><i
-                                                    data-lucide="fish" class="inline-icon"></i> Phishing Sample</button>
+                                                    data-lucide="fish" class="inline-icon"></i> Phishing</button>
                                         </div>
                                     </div>
-                                    <div style="display: flex; gap: 10px; margin-top: 16px;">
+                                    <div style="display: flex; gap: 10px; margin-top: 12px;">
                                         <button class="btn btn-primary btn-lg" id="classifyBtn"
                                             onclick="classifyEmail()" style="flex:1;">
-                                            <i data-lucide="search" class="inline-icon"></i> Analyze Email
+                                            <i data-lucide="search" class="inline-icon"></i> Run Security Analysis
                                         </button>
                                         <button class="btn btn-secondary btn-icon" onclick="clearInput()"
                                             title="Clear"><i data-lucide="trash-2"></i></button>
@@ -183,75 +337,98 @@
                                 </div>
                             </div>
 
-                            <!-- XAI Panel (shown after analysis) -->
-                            <div class="card" id="xaiCard" style="display:none; margin-top: 20px;">
-                                <div class="card-header">
-                                    <h3><i data-lucide="brain" class="header-icon"></i> Explainable AI — Why this
-                                        classification?
-                                    </h3>
+                            <!-- Deep Analysis Evidence -->
+                            <div id="analysisEvidence" style="display:none;">
+                                <!-- Highlighted Content Card -->
+                                <div class="card" style="margin-top: 16px;">
+                                    <div class="card-header">
+                                        <h3><i data-lucide="file-text" class="header-icon"></i> Suspicious Content Detection</h3>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="highlightedEmail" class="highlighted-email"></div>
+                                    </div>
                                 </div>
-                                <div class="card-body">
-                                    <p style="font-size:13px; color:var(--text-muted); margin-bottom: 14px;">
-                                        Top keywords contributing to the spam classification:
-                                    </p>
-                                    <div id="xaiKeywords" class="xai-keywords"></div>
-                                    <div id="xaiContributions" style="margin-top: 16px;"></div>
-                                </div>
-                            </div>
 
-                            <!-- Highlighted Email (shown after analysis) -->
-                            <div class="card" id="highlightCard" style="display:none; margin-top: 20px;">
-                                <div class="card-header">
-                                    <h3><i data-lucide="file-text" class="header-icon"></i> Highlighted Suspicious
-                                        Content</h3>
-                                </div>
-                                <div class="card-body">
-                                    <div id="highlightedEmail" class="highlighted-email"></div>
+                                <!-- XAI / Model Reasoning Card -->
+                                <div class="card" style="margin-top: 16px;">
+                                    <div class="card-header">
+                                        <h3><i data-lucide="brain" class="header-icon"></i> Explainable AI Insights</h3>
+                                    </div>
+                                    <div class="card-body">
+                                        <p style="font-size:12px; color:var(--text-muted); margin-bottom: 12px;">
+                                            Below is a breakdown of specific keywords and their impact on the model's final decision:
+                                        </p>
+                                        <div id="xaiKeywords" class="xai-keywords"></div>
+                                        <div id="xaiContributions" style="margin-top: 12px;"></div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Right: Results -->
-                        <div class="result-panel">
-                            <!-- Verdict -->
-                            <div class="card">
-                                <div class="card-body" id="resultArea">
-                                    <div class="result-placeholder" id="resultPlaceholder">
-                                        <div class="placeholder-icon"><i data-lucide="shield"></i></div>
-                                        <p style="font-weight:600;">Waiting for email to analyze</p>
-                                        <p style="font-size:12px; margin-top:4px;">Paste text or upload a file</p>
+                        <!-- Right: Verdict & Intelligence -->
+                        <div class="analyze-result-side">
+                            <!-- Placeholder -->
+                            <div class="card" id="resultPlaceholder">
+                                <div class="card-body" style="padding: 40px 20px; text-align: center;">
+                                    <div class="placeholder-icon" style="opacity: 0.2; margin-bottom: 16px;">
+                                        <i data-lucide="shield-check" style="width: 48px; height: 48px;"></i>
                                     </div>
-                                    <div id="resultBox" style="display:none;"></div>
+                                    <h4 style="color: var(--text-secondary); margin-bottom: 8px;">System Ready</h4>
+                                    <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5;">
+                                        Enter email content on the left to generate a comprehensive security report.
+                                    </p>
                                 </div>
                             </div>
 
-                            <!-- Phishing Risk -->
-                            <div class="card" id="phishingCard" style="display:none;">
-                                <div class="card-header">
-                                    <h3><i data-lucide="fish" class="header-icon"></i> Phishing Risk</h3>
-                                </div>
-                                <div class="card-body">
-                                    <div id="phishingResult"></div>
-                                </div>
-                            </div>
+                            <div id="analysisResults" style="display:none;">
+                                <!-- 1. Executive Verdict Card -->
+                                <div class="card verdict-card">
+                                    <div class="card-body">
+                                        <div id="verdictHeader"></div>
+                                        <div class="verdict-stats-grid">
+                                            <div class="verdict-main-score">
+                                                <div id="riskMeterContainer"></div>
+                                                <div class="score-label">Risk Score</div>
+                                            </div>
+                                            <div class="verdict-sub-stats">
+                                                <div id="confidenceBars"></div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="model-votes" id="modelVotes">
+                                            <!-- Model comparison cards go here -->
+                                        </div>
 
-                            <!-- URL Scanner -->
-                            <div class="card" id="urlCard" style="display:none;">
-                                <div class="card-header">
-                                    <h3><i data-lucide="link" class="header-icon"></i> URL Security Scan</h3>
+                                        <button class="btn btn-secondary btn-block" id="dlPdfBtn" style="margin-top: 12px; width: 100%; justify-content: center;" onclick="downloadPDFReport()">
+                                            <i data-lucide="download" class="inline-icon"></i> Download PDF Report
+                                        </button>
+                                    </div>
                                 </div>
-                                <div class="card-body">
-                                    <div id="urlResult"></div>
-                                </div>
-                            </div>
 
-                            <!-- Email Intelligence -->
-                            <div class="card" id="intelCard" style="display:none;">
-                                <div class="card-header">
-                                    <h3><i data-lucide="cpu" class="header-icon"></i> Email Intelligence</h3>
-                                </div>
-                                <div class="card-body">
-                                    <div id="intelResult"></div>
+                                <!-- 2. Security Intelligence Card -->
+                                <div class="card" style="margin-top: 16px;">
+                                    <div class="card-header">
+                                        <h3><i data-lucide="shield" class="header-icon"></i> Security Intelligence</h3>
+                                    </div>
+                                    <div class="card-body" style="padding: 12px;">
+                                        <!-- Threat Indicators -->
+                                        <div class="intel-section">
+                                            <h4 class="intel-title"><i data-lucide="alert-circle"></i> Detected Threats</h4>
+                                            <div id="phishingResult"></div>
+                                        </div>
+
+                                        <!-- URL Security -->
+                                        <div class="intel-section" style="margin-top: 14px;">
+                                            <h4 class="intel-title"><i data-lucide="link"></i> URL Inspection</h4>
+                                            <div id="urlResult"></div>
+                                        </div>
+
+                                        <!-- Metadata / Intelligence -->
+                                        <div class="intel-section" style="margin-top: 14px;">
+                                            <h4 class="intel-title"><i data-lucide="info"></i> Technical Metrics</h4>
+                                            <div id="intelResult"></div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -357,77 +534,156 @@
                 </div>
 
                 <!-- ══════════════════════════════════════════════
-                     PANEL: API Docs
+                     PANEL: Live Inbox
                      ══════════════════════════════════════════════ -->
-                <div class="panel" id="panel-api">
-                    <div class="card">
-                        <div class="card-header">
-                            <h3><i data-lucide="code-2" class="header-icon"></i> REST API Documentation</h3>
+                <div class="panel" id="panel-inbox">
+                    <div class="inbox-container">
+                        <!-- Connection Panel -->
+                        <div class="card" id="inboxConnectCard">
+                            <div class="card-header">
+                                <h3><i data-lucide="inbox" class="header-icon"></i> Connect Your Inbox</h3>
+                            </div>
+                            <div class="card-body">
+                                <p style="color:var(--text-muted); font-size:14px; margin-bottom:20px;">
+                                    Connect your email account to automatically fetch and classify emails in real-time. 
+                                    Your password is never stored on our servers.
+                                </p>
+                                
+                                <div class="imap-form" autocomplete="off">
+                                    <div class="form-group">
+                                        <label class="form-label">Email Address</label>
+                                        <input type="email" id="imapEmail" class="form-input" 
+                                            placeholder="your.email@gmail.com" 
+                                            autocomplete="new-password" name="imap_email_nofill"
+                                            onblur="detectIMAPServer()">
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label class="form-label">
+                                            App Password 
+                                            <span style="color:#ef4444;">*</span>
+                                        </label>
+                                        <div class="password-input-wrapper">
+                                            <input type="password" id="imapPassword" class="form-input" 
+                                                placeholder="Your 16-character app password"
+                                                autocomplete="new-password" name="imap_pass_nofill">
+                                            <button type="button" class="password-toggle" onclick="togglePasswordVisibility('imapPassword')">
+                                                <i data-lucide="eye"></i>
+                                            </button>
+                                        </div>
+                                        <div class="form-hint" style="flex-direction:column; align-items:flex-start; gap:4px;">
+                                            <span style="display:flex; align-items:center; gap:6px;">
+                                                <i data-lucide="alert-triangle" style="width:12px;height:12px; color:#f59e0b;"></i>
+                                                <strong>Gmail users:</strong> You MUST use an App Password, not your regular password
+                                            </span>
+                                            <a href="https://myaccount.google.com/apppasswords" target="_blank" style="color:var(--accent-cyan); font-size:11px; margin-left:18px;">
+                                                → Click here to create a Gmail App Password
+                                            </a>
+                                        </div>
+                                    </div>
+
+                                    <!-- Clear fields button -->
+                                    <button type="button" class="btn btn-secondary btn-sm" onclick="clearInboxFields()" style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                                        <i data-lucide="trash-2" style="width:14px;height:14px;"></i> Clear Fields
+                                    </button>
+                                    
+                                    <div class="form-group" id="imapServerGroup" style="display:none;">
+                                        <label class="form-label">IMAP Server (Optional)</label>
+                                        <input type="text" id="imapServer" class="form-input" 
+                                            placeholder="Auto-detected">
+                                        <span class="form-hint">Leave blank for auto-detection</span>
+                                    </div>
+                                    
+                                    <div class="form-actions">
+                                        <button class="btn btn-primary btn-lg" id="connectInboxBtn" onclick="connectInbox()">
+                                            <i data-lucide="link" class="inline-icon"></i> Connect Inbox
+                                        </button>
+                                        <button class="btn btn-secondary" onclick="toggleAdvancedSettings()">
+                                            <i data-lucide="settings" class="inline-icon"></i> Advanced
+                                        </button>
+                                    </div>
+                                    
+                                    <div style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border-color);">
+                                        <button class="btn btn-demo" onclick="connectDemo()" style="width:100%;">
+                                            <i data-lucide="play-circle" class="inline-icon"></i> Try Demo Mode (No real emails)
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Provider Help -->
+                                <div class="provider-help" style="margin-top:24px;">
+                                    <h4 style="font-size:13px; color:var(--text-muted); margin-bottom:12px;">
+                                        How to get an app password:
+                                    </h4>
+                                    <div class="provider-links">
+                                        <a href="https://myaccount.google.com/apppasswords" target="_blank" class="provider-link">
+                                            <i data-lucide="mail"></i> Gmail
+                                        </a>
+                                        <a href="https://account.live.com/proofs/AppPassword" target="_blank" class="provider-link">
+                                            <i data-lucide="mail"></i> Outlook
+                                        </a>
+                                        <a href="https://login.yahoo.com/account/security/app-passwords" target="_blank" class="provider-link">
+                                            <i data-lucide="mail"></i> Yahoo
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="card-body">
-                            <p style="color:var(--text-muted); font-size:14px; margin-bottom:24px;">
-                                Integrate SpamGuard AI into your applications using these endpoints.
-                                Base URL: <code style="color:var(--accent-cyan);">http://localhost:5000</code>
-                            </p>
-
-                            <div class="api-endpoint">
-                                <span class="api-method post">POST</span>
-                                <span class="api-path">/api/predict</span>
-                                <p class="api-desc">Classify a single email with full analysis (spam detection,
-                                    phishing, URL scan, intelligence).</p>
-                                <div class="code-block">
-                                    <pre>{
-  "email_text": "Your email content here...",
-  "model": "nb"  // Options: "nb", "lr", "rf"
-}</pre>
+                        
+                        <!-- Connected Inbox Panel -->
+                        <div class="card" id="inboxConnectedCard" style="display:none;">
+                            <div class="card-header inbox-header">
+                                <div class="inbox-title">
+                                    <h3><i data-lucide="inbox" class="header-icon"></i> Live Inbox</h3>
+                                    <span class="connection-status connected">
+                                        <span class="status-dot"></span> Connected
+                                    </span>
+                                </div>
+                                <div class="inbox-actions">
+                                    <button class="btn btn-secondary" onclick="refreshInbox()">
+                                        <i data-lucide="refresh-cw" class="inline-icon"></i> Refresh
+                                    </button>
+                                    <button class="btn btn-danger" onclick="disconnectInbox()">
+                                        <i data-lucide="log-out" class="inline-icon"></i> Disconnect
+                                    </button>
                                 </div>
                             </div>
-
-                            <div class="api-endpoint">
-                                <span class="api-method post">POST</span>
-                                <span class="api-path">/api/batch_predict</span>
-                                <p class="api-desc">Classify multiple emails at once. Send JSON array or upload CSV.</p>
-                                <div class="code-block">
-                                    <pre>{
-  "emails": ["email1 text...", "email2 text..."],
-  "model": "nb"
-}</pre>
+                            <div class="card-body">
+                                <div class="inbox-toolbar">
+                                    <div class="inbox-info">
+                                        <span id="connectedEmail"></span>
+                                        <span class="last-fetch" id="lastFetchTime"></span>
+                                    </div>
+                                    <div class="inbox-filters">
+                                        <button class="filter-chip active" data-filter="all" onclick="filterInbox('all')">All</button>
+                                        <button class="filter-chip" data-filter="spam" onclick="filterInbox('spam')">
+                                            <i data-lucide="alert-triangle" class="inline-icon"></i> Spam
+                                        </button>
+                                        <button class="filter-chip" data-filter="ham" onclick="filterInbox('ham')">
+                                            <i data-lucide="check-circle" class="inline-icon"></i> Safe
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
-
-                            <div class="api-endpoint">
-                                <span class="api-method get">GET</span>
-                                <span class="api-path">/api/history</span>
-                                <p class="api-desc">Retrieve analysis history. Supports query params: filter
-                                    (spam/ham/all), search, limit.</p>
-                                <div class="code-block">
-                                    <pre>GET /api/history?filter=spam&search=prize&limit=50</pre>
+                                
+                                <!-- Auto-refresh toggle -->
+                                <div class="auto-refresh-bar">
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="autoRefreshToggle" onchange="toggleAutoRefresh()">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                    <span class="toggle-label">Auto-refresh every 30 seconds</span>
                                 </div>
-                            </div>
-
-                            <div class="api-endpoint">
-                                <span class="api-method get">GET</span>
-                                <span class="api-path">/api/stats</span>
-                                <p class="api-desc">Get model statistics, metrics, and available models.</p>
-                            </div>
-
-                            <div class="api-endpoint">
-                                <span class="api-method get">GET</span>
-                                <span class="api-path">/api/analytics</span>
-                                <p class="api-desc">Get analytics data for dashboard charts (distribution, trends, model
-                                    comparison).</p>
-                            </div>
-
-                            <div class="api-endpoint">
-                                <span class="api-method get">GET</span>
-                                <span class="api-path">/api/models</span>
-                                <p class="api-desc">List available ML models with their performance metrics.</p>
-                            </div>
-
-                            <div class="api-endpoint">
-                                <span class="api-method delete">DELETE</span>
-                                <span class="api-path">/api/history/{id}</span>
-                                <p class="api-desc">Delete a specific history entry by ID.</p>
+                                
+                                <!-- Email List -->
+                                <div class="email-list" id="emailList">
+                                    <div class="empty-state">
+                                        <div class="empty-icon"><i data-lucide="inbox" style="width:48px;height:48px"></i></div>
+                                        <div class="empty-text">No emails fetched yet</div>
+                                        <button class="btn btn-primary" onclick="refreshInbox()" style="margin-top:16px;">
+                                            <i data-lucide="download" class="inline-icon"></i> Fetch Emails
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
