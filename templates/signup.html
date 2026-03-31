@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up — MailGuard</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-card: #1a1a25;
+            --bg-input: #0f0f15;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b0;
+            --text-muted: #606070;
+            --accent: #00d4aa;
+            --accent-glow: rgba(0, 212, 170, 0.3);
+            --danger: #ff4757;
+            --border: #2a2a3a;
+            --border-focus: #00d4aa;
+        }
+
+        [data-theme="light"] {
+            --bg-primary: #f5f5f7;
+            --bg-secondary: #ffffff;
+            --bg-card: #ffffff;
+            --bg-input: #f0f0f5;
+            --text-primary: #1a1a2e;
+            --text-secondary: #4a4a5a;
+            --text-muted: #8a8a9a;
+            --accent: #00b894;
+            --accent-glow: rgba(0, 184, 148, 0.2);
+            --danger: #e74c3c;
+            --border: #e0e0e5;
+            --border-focus: #00b894;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: var(--bg-primary);
+            min-height: 100vh;
+            display: flex;
+            overflow: hidden;
+            transition: background 0.3s ease;
+        }
+
+        .bg-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            opacity: 0.03;
+            background-image: 
+                linear-gradient(var(--accent) 1px, transparent 1px),
+                linear-gradient(90deg, var(--accent) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: gridMove 20s linear infinite;
+        }
+
+        @keyframes gridMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.15;
+            pointer-events: none;
+        }
+
+        .orb-1 {
+            width: 400px;
+            height: 400px;
+            background: var(--accent);
+            top: -100px;
+            right: -100px;
+            animation: float 8s ease-in-out infinite;
+        }
+
+        .orb-2 {
+            width: 300px;
+            height: 300px;
+            background: #6c5ce7;
+            bottom: -50px;
+            left: -50px;
+            animation: float 10s ease-in-out infinite reverse;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(30px, -30px) scale(1.1); }
+        }
+
+        .brand-side {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 60px;
+            position: relative;
+        }
+
+        .brand-content {
+            max-width: 480px;
+        }
+
+        .logo-mark {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, var(--accent), #6c5ce7);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 40px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .logo-mark::before {
+            content: '';
+            position: absolute;
+            inset: 2px;
+            background: var(--bg-card);
+            border-radius: 14px;
+        }
+
+        .form-side {
+            width: 480px;
+            background: var(--bg-card);
+            border-left: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 60px;
+            position: relative;
+            overflow-y: auto;
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: var(--bg-input);
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .theme-toggle:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .form-container {
+            width: 100%;
+        }
+
+        .form-header {
+            margin-bottom: 32px;
+        }
+
+        .form-header h2 {
+            font-size: 28px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .form-header p {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .flash-messages {
+            margin-bottom: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .flash-message {
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .flash-message.success {
+            background: rgba(0, 212, 170, 0.1);
+            color: var(--accent);
+            border: 1px solid rgba(0, 212, 170, 0.2);
+        }
+
+        .flash-message.danger {
+            background: rgba(255, 71, 87, 0.1);
+            color: var(--danger);
+            border: 1px solid rgba(255, 71, 87, 0.2);
+        }
+
+        .flash-message.info {
+            background: rgba(108, 92, 231, 0.1);
+            color: #6c5ce7;
+            border: 1px solid rgba(108, 92, 231, 0.2);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 14px 44px 14px 16px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 15px;
+            font-family: inherit;
+            transition: all 0.2s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .form-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .form-input.error {
+            border-color: var(--danger);
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .password-toggle:hover {
+            color: var(--text-primary);
+            background: var(--border);
+        }
+
+        .password-hint {
+            font-size: 12px;
+            color: var(--danger);
+            margin-top: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .password-hint.show {
+            opacity: 1;
+        }
+
+        .password-strength {
+            margin-top: 8px;
+            display: flex;
+            gap: 4px;
+        }
+
+        .strength-bar {
+            flex: 1;
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            transition: background 0.2s ease;
+        }
+
+        .strength-bar.weak { background: var(--danger); }
+        .strength-bar.medium { background: #ffa502; }
+        .strength-bar.strong { background: var(--accent); }
+
+        .submit-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, var(--accent), #6c5ce7);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .submit-btn::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, transparent, rgba(255,255,255,0.1), transparent);
+            transform: translateX(-100%);
+            transition: transform 0.5s ease;
+        }
+
+        .submit-btn:hover::before {
+            transform: translateX(100%);
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px var(--accent-glow);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .submit-btn i {
+            width: 18px;
+            height: 18px;
+        }
+
+        .form-footer {
+            text-align: center;
+            margin-top: 32px;
+            padding-top: 32px;
+            border-top: 1px solid var(--border);
+        }
+
+        .form-footer p {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .form-footer a {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 500;
+            transition: opacity 0.2s ease;
+        }
+
+        .form-footer a:hover {
+            opacity: 0.8;
+        }
+
+        .terms-text {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-align: center;
+            margin-top: 16px;
+        }
+
+        .terms-text a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        @media (max-width: 900px) {
+            .brand-side {
+                display: none;
+            }
+            .form-side {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-grid"></div>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+
+    <div class="brand-side">
+        <div class="brand-content">
+            <div class="logo-mark">
+                <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 36px; height: 36px; position: relative; z-index: 1;">
+                    <path d="M16 2L4 7V14C4 21.73 9.11 28.76 16 30C22.89 28.76 28 21.73 28 14V7L16 2Z" fill="url(#shieldGrad2)" stroke="url(#shieldStroke2)" stroke-width="1.5"/>
+                    <rect x="9" y="11" width="14" height="10" rx="1.5" fill="rgba(26,26,37,0.9)" stroke="url(#envelopeStroke2)" stroke-width="1"/>
+                    <path d="M9 12.5L16 17L23 12.5" stroke="url(#envelopeStroke2)" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="22" cy="21" r="4" fill="#00d4aa"/>
+                    <path d="M20.2 21L21.5 22.3L24 19.7" stroke="#1a1a25" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <defs>
+                        <linearGradient id="shieldGrad2" x1="4" y1="2" x2="28" y2="30" gradientUnits="userSpaceOnUse">
+                            <stop offset="0%" stop-color="#00d4aa"/>
+                            <stop offset="100%" stop-color="#6c5ce7"/>
+                        </linearGradient>
+                        <linearGradient id="shieldStroke2" x1="4" y1="2" x2="28" y2="30" gradientUnits="userSpaceOnUse">
+                            <stop offset="0%" stop-color="#00d4aa"/>
+                            <stop offset="100%" stop-color="#6c5ce7"/>
+                        </linearGradient>
+                        <linearGradient id="envelopeStroke2" x1="9" y1="11" x2="23" y2="21" gradientUnits="userSpaceOnUse">
+                            <stop offset="0%" stop-color="#00d4aa"/>
+                            <stop offset="100%" stop-color="#6c5ce7"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+            </div>
+            <h1 style="font-size: 48px; font-weight: 700; color: var(--text-primary); line-height: 1.1; margin-bottom: 16px; letter-spacing: -1px;">Mail<span style="background: linear-gradient(135deg, var(--accent), #6c5ce7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Guard</span></h1>
+            <p style="font-size: 18px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 48px;">Advanced email security powered by machine learning. Detect spam, phishing, and malicious content in real-time.</p>
+            
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                <div style="display: flex; align-items: center; gap: 12px; color: var(--text-secondary); font-size: 14px;">
+                    <i data-lucide="check-circle" style="color: var(--accent); width: 20px; height: 20px;"></i>
+                    <span>Multi-model spam detection</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 12px; color: var(--text-secondary); font-size: 14px;">
+                    <i data-lucide="check-circle" style="color: var(--accent); width: 20px; height: 20px;"></i>
+                    <span>Real-time phishing analysis</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 12px; color: var(--text-secondary); font-size: 14px;">
+                    <i data-lucide="check-circle" style="color: var(--accent); width: 20px; height: 20px;"></i>
+                    <span>URL security scanning</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 12px; color: var(--text-secondary); font-size: 14px;">
+                    <i data-lucide="check-circle" style="color: var(--accent); width: 20px; height: 20px;"></i>
+                    <span>Explainable AI insights</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-side">
+        <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+            <i data-lucide="sun" id="themeIcon"></i>
+        </button>
+
+        <div class="form-container">
+            <div class="form-header">
+                <h2>Create Account</h2>
+                <p>Join MailGuard for advanced email protection</p>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="flash-messages">
+                        {% for category, message in messages %}
+                            <div class="flash-message {{ category }}">
+                                <i data-lucide="{% if category == 'success' %}check-circle{% elif category == 'danger' %}alert-triangle{% else %}info{% endif %}"></i>
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST" action="/signup" onsubmit="return validateForm()">
+                <div class="form-group">
+                    <label class="form-label">Username</label>
+                    <div class="input-wrapper">
+                        <input type="text" name="username" id="username" class="form-input" placeholder="Choose a username" required minlength="3" oninput="validateUsername()">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <div class="input-wrapper">
+                        <input type="email" name="email" id="email" class="form-input" placeholder="Enter your email" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <div class="input-wrapper">
+                        <input type="password" name="password" id="password" class="form-input" placeholder="Create a password" required minlength="8" oninput="validatePassword()">
+                        <button type="button" class="password-toggle" onclick="togglePassword()">
+                            <i data-lucide="eye" id="eyeIcon"></i>
+                        </button>
+                    </div>
+                    <div class="password-hint" id="passwordHint">
+                        <i data-lucide="alert-circle"></i>
+                        <span>Password must be at least 8 characters</span>
+                    </div>
+                    <div class="password-strength" id="strengthBars">
+                        <div class="strength-bar" id="bar1"></div>
+                        <div class="strength-bar" id="bar2"></div>
+                        <div class="strength-bar" id="bar3"></div>
+                        <div class="strength-bar" id="bar4"></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Confirm Password</label>
+                    <div class="input-wrapper">
+                        <input type="password" name="confirm_password" id="confirmPassword" class="form-input" placeholder="Confirm your password" required oninput="validateConfirmPassword()">
+                        <button type="button" class="password-toggle" onclick="toggleConfirmPassword()">
+                            <i data-lucide="eye" id="eyeIcon2"></i>
+                        </button>
+                    </div>
+                    <div class="password-hint" id="confirmHint">
+                        <i data-lucide="alert-circle"></i>
+                        <span>Passwords do not match</span>
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-btn" id="submitBtn">
+                    <span>Create Account</span>
+                    <i data-lucide="arrow-right"></i>
+                </button>
+
+                <p class="terms-text">By signing up, you agree to our <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a></p>
+            </form>
+
+            <div class="form-footer">
+                <p>Already have an account? <a href="/login">Sign in</a></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        if (window.lucide) lucide.createIcons();
+
+        function toggleTheme() {
+            const html = document.documentElement;
+            const current = html.getAttribute('data-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', next);
+            localStorage.setItem('theme', next);
+            
+            const icon = document.getElementById('themeIcon');
+            if (icon) {
+                icon.setAttribute('data-lucide', next === 'dark' ? 'sun' : 'moon');
+                lucide.createIcons();
+            }
+        }
+
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+
+        function togglePassword() {
+            const password = document.getElementById('password');
+            const eyeIcon = document.getElementById('eyeIcon');
+            
+            if (password.type === 'password') {
+                password.type = 'text';
+                eyeIcon.setAttribute('data-lucide', 'eye-off');
+            } else {
+                password.type = 'password';
+                eyeIcon.setAttribute('data-lucide', 'eye');
+            }
+            lucide.createIcons();
+        }
+
+        function toggleConfirmPassword() {
+            const password = document.getElementById('confirmPassword');
+            const eyeIcon = document.getElementById('eyeIcon2');
+            
+            if (password.type === 'password') {
+                password.type = 'text';
+                eyeIcon.setAttribute('data-lucide', 'eye-off');
+            } else {
+                password.type = 'password';
+                eyeIcon.setAttribute('data-lucide', 'eye');
+            }
+            lucide.createIcons();
+        }
+
+        function validatePassword() {
+            const password = document.getElementById('password');
+            const hint = document.getElementById('passwordHint');
+            const submitBtn = document.getElementById('submitBtn');
+            
+            if (password.value.length > 0 && password.value.length < 8) {
+                hint.classList.add('show');
+                submitBtn.disabled = true;
+            } else {
+                hint.classList.remove('show');
+                submitBtn.disabled = false;
+            }
+
+            // Password strength
+            const bars = ['bar1', 'bar2', 'bar3', 'bar4'];
+            const val = password.value;
+            let strength = 0;
+            
+            if (val.length >= 8) strength++;
+            if (/[A-Z]/.test(val)) strength++;
+            if (/[0-9]/.test(val)) strength++;
+            if (/[^A-Za-z0-9]/.test(val)) strength++;
+
+            bars.forEach((bar, i) => {
+                const el = document.getElementById(bar);
+                el.className = 'strength-bar';
+                if (i < strength) {
+                    if (strength <= 1) el.classList.add('weak');
+                    else if (strength <= 2) el.classList.add('medium');
+                    else el.classList.add('strong');
+                }
+            });
+
+            validateConfirmPassword();
+        }
+
+        function validateConfirmPassword() {
+            const password = document.getElementById('password');
+            const confirm = document.getElementById('confirmPassword');
+            const hint = document.getElementById('confirmHint');
+            const submitBtn = document.getElementById('submitBtn');
+            
+            if (confirm.value.length > 0 && password.value !== confirm.value) {
+                hint.classList.add('show');
+                confirm.classList.add('error');
+                submitBtn.disabled = true;
+            } else {
+                hint.classList.remove('show');
+                confirm.classList.remove('error');
+                if (password.value.length >= 8) {
+                    submitBtn.disabled = false;
+                }
+            }
+        }
+
+        function validateUsername() {
+            const username = document.getElementById('username');
+            if (username.value.length > 0 && username.value.length < 3) {
+                username.classList.add('error');
+            } else {
+                username.classList.remove('error');
+            }
+        }
+
+        function validateForm() {
+            const password = document.getElementById('password');
+            const confirm = document.getElementById('confirmPassword');
+            
+            if (password.value.length < 8) return false;
+            if (password.value !== confirm.value) return false;
+            
+            return true;
+        }
+    </script>
+</body>
+</html>
