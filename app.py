@@ -77,13 +77,20 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_DIR = os.path.join(BASE_DIR, "model")
 STATS_PATH = os.path.join(MODEL_DIR, "stats.json")
 
-# In Vercel, the filesystem is read-only except for /tmp
+# Platform-specific paths
 if os.environ.get("VERCEL"):
+    # Vercel: read-only filesystem except /tmp
     DB_PATH = os.path.join("/tmp", "history.db")
-    # Tell NLTK to use /tmp for data
     NLTK_DATA_DIR = os.path.join("/tmp", "nltk_data")
     if not os.path.exists(NLTK_DATA_DIR):
         os.makedirs(NLTK_DATA_DIR, exist_ok=True)
+    if NLTK_DATA_DIR not in nltk.data.path:
+        nltk.data.path.append(NLTK_DATA_DIR)
+elif os.environ.get("RENDER"):
+    # Render: persistent disk mounted at /data
+    DB_PATH = os.path.join("/data", "history.db")
+    NLTK_DATA_DIR = os.path.join("/data", "nltk_data")
+    os.makedirs(NLTK_DATA_DIR, exist_ok=True)
     if NLTK_DATA_DIR not in nltk.data.path:
         nltk.data.path.append(NLTK_DATA_DIR)
 else:
@@ -2449,5 +2456,7 @@ def generate_pdf():
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    print("\n>>> Email Security Platform running at http://127.0.0.1:5000\n")
-    app.run(debug=True, port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    debug = not os.environ.get("RENDER")
+    print(f"\n>>> Email Security Platform running at http://127.0.0.1:{port}\n")
+    app.run(debug=debug, host="0.0.0.0", port=port)
